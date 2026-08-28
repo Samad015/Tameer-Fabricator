@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -11,18 +10,6 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
-// Nodemailer Transporter Setup
-// Nodemailer Transporter Setup
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  family: 4, // Forces IPv4 to bypass Render's network restrictions
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 // API Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend is running successfully' });
@@ -37,12 +24,20 @@ app.post('/api/contact', async (req, res) => {
   }
 
   try {
-    // Email configuration to send details to your inbox
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // Apni hi email par notification mangwayenge
+    // Brevo API Request Payload
+    const emailData = {
+      sender: { 
+        name: "Tameer Fabricators", 
+        email: process.env.EMAIL_USER // Aapki verified email ya Brevo sender email
+      },
+      to: [
+        { 
+          email: process.env.EMAIL_USER, 
+          name: "Admin" 
+        }
+      ],
       subject: `New Quote Request from ${name}`,
-      html: `
+      htmlContent: `
         <h2>New Project Inquiry - Tameer Fabricator's</h2>
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Phone:</strong> ${phone}</p>
@@ -52,8 +47,24 @@ app.post('/api/contact', async (req, res) => {
       `,
     };
 
-    // Send email
-    await transporter.sendMail(mailOptions);
+    // Send email using Brevo HTTP API (No SMTP / No Port Blocking)
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(emailData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to send email via Brevo API');
+    }
+
+    console.log('Email sent successfully via Brevo!');
 
     return res.status(200).json({ 
       success: true, 
