@@ -12,14 +12,17 @@ app.use(cors());
 app.use(express.json());
 
 // Nodemailer Transporter Setup
+// Nodemailer Transporter Setup
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  family: 4, // Forces IPv4 to bypass Render's network restrictions
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
-
 // API Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend is running successfully' });
