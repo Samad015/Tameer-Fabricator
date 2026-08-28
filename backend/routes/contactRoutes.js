@@ -6,27 +6,47 @@ router.post("/", async (req, res) => {
   try {
     console.log("Contact form data:", req.body);
 
-    const { name, email, message } = req.body;
+    const {
+      name,
+      phone,
+      width,
+      height,
+      message
+    } = req.body;
 
-    if (!name || !email || !message) {
+    // Required fields
+    if (!name || !phone) {
       return res.status(400).json({
         success: false,
-        message: "Please fill all fields",
+        message: "Please fill your name and phone number"
       });
     }
 
-    // Yahan apna email/database logic laga sakte ho
+    // Here you can later add:
+    // - MongoDB
+    // - Email notification
+    // - WhatsApp notification
+    // - Lead creation
+
+    console.log("New quote request:", {
+      name,
+      phone,
+      width,
+      height,
+      message
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Message sent successfully",
+      message: "Quote request submitted successfully"
     });
+
   } catch (error) {
     console.error("Contact Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Something went wrong",
+      message: "Something went wrong"
     });
   }
 });

@@ -1,50 +1,71 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-
-dotenv.config();
+const express = require('express');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 
-// ==================== CORS ====================
-app.use(
-  cors({
-    origin: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// CORS Settings
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
 
-// ==================== MIDDLEWARE ====================
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// ==================== TEST ROUTE ====================
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Tameer Fabricator Backend is running",
-  });
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-// ==================== CONTACT ROUTE ====================
-const contactRoutes = require("./routes/contactRoutes");
-
-app.use("/api/contact", contactRoutes);
-
-// ==================== ERROR HANDLER ====================
-app.use((err, req, res, next) => {
-  console.error("❌ Server Error:", err);
-
-  res.status(500).json({
-    success: false,
-    message: "Internal Server Error",
-  });
+app.get('/', (req, res) => {
+  res.send('Server Running!');
 });
 
-// ==================== SERVER ====================
-const PORT = process.env.PORT || 5001;
+app.post('/api/contact', async (req, res) => {
+  const { name, phone, width, height, message } = req.body;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  if (!name || !phone) {
+    return res.status(400).json({
+      success: false,
+      message: 'Name and Phone number are required fields.',
+    });
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER,
+    subject: `New Quote Request from ${name}`,
+    html: `
+      <h2>New Quote Request</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Width:</strong> ${width || 'N/A'} ft</p>
+      <p><strong>Height:</strong> ${height || 'N/A'} ft</p>
+      <p><strong>Message:</strong> ${message || 'N/A'}</p>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return res.status(200).json({
+      success: true,
+      message: 'Quote request submitted successfully!',
+    });
+  } catch (error) {
+    console.error('Mail Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send email.',
+    });
+  }
+});
+
+const PORT = 5001;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://127.0.0.1:${PORT}`);
 });
