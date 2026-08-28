@@ -53,14 +53,14 @@ export default function ContactForm() {
     });
 
     try {
-      const response = await fetch("https://YOUR-BACKEND.onrender.com/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
+    const response = await fetch("https://tameer-fabricator-backend.onrender.com/api/contact", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  }
+);
       const text = await response.text();
 
       let data = {};
