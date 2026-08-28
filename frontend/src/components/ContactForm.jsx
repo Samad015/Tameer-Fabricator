@@ -35,14 +35,13 @@ export default function ContactForm() {
     setStatus({ type: null, message: '' });
 
     try {
-      // Localhost Backend Endpoint
-     // Line 39 ko isse replace karo:
-const response = await fetch('http://127.0.0.1:5001/api/contact', {
+ 
+const response = await fetch('/api/contact', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   },
-  body: JSON.stringify(formData),
+  body: JSON.stringify(payload),
 });
       const data = await response.json();
 

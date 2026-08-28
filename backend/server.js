@@ -1,19 +1,15 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
+const path = require('path'); // Path module import karein
 require('dotenv').config();
 
 const app = express();
 
-// CORS Settings
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
-
+app.use(cors());
 app.use(express.json());
 
+// Transporter Config
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -22,10 +18,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-app.get('/', (req, res) => {
-  res.send('Server Running!');
-});
-
+// 1. API Route (Form Submit handler)
 app.post('/api/contact', async (req, res) => {
   const { name, phone, width, height, message } = req.body;
 
@@ -65,7 +58,15 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-const PORT = 5001;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://127.0.0.1:${PORT}`);
+// 2. FRONTEND SERVE KARNE KA CODE
+// (Path update karein apne frontend build folder ke location ke hisab se)
+const frontendPath = path.join(__dirname, '../dist'); // Ya '../build' agar CRA use kar rahe hain
+app.use(express.static(frontendPath));
+
+// Har route par React Single Page App (index.html) return karo
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Full Stack Server running on port ${PORT}`));
