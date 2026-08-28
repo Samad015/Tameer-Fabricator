@@ -35,20 +35,20 @@ export default function ContactForm() {
     setStatus({ type: null, message: '' });
 
     try {
- 
-const response = await fetch('/api/contact', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(payload),
-});
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
       const data = await response.json();
 
       if (response.ok && data.success) {
         setStatus({
           type: 'success',
-          message: data.message,
+          message: data.message || 'Quote request submitted successfully!',
         });
         setFormData({ name: '', phone: '', width: '', height: '', message: '' });
       } else {
@@ -61,7 +61,7 @@ const response = await fetch('/api/contact', {
       console.error('Submission Error:', error);
       setStatus({
         type: 'error',
-        message: 'Server error! Make sure local backend server is running.',
+        message: 'Server error! Please check if backend is running on port 5001.',
       });
     } finally {
       setLoading(false);
