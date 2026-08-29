@@ -3,11 +3,19 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Debug logs to verify environment variables load correctly
+console.log("Loaded API Key:", process.env.BREVO_API_KEY ? "Key Present (Length: " + process.env.BREVO_API_KEY.length + ")" : "KEY IS MISSING!");
+console.log("Loaded Email:", process.env.EMAIL_USER);
+
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Middleware
-app.use(cors());
+// Middleware - CORS configuration for local development and production
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // API Routes
@@ -23,12 +31,20 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Name and Phone are required.' });
   }
 
+  // Check if Brevo API key exists in environment variables
+  if (!process.env.BREVO_API_KEY) {
+    console.error('Email Error: Brevo API key missing');
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server configuration error: Brevo API key missing.' 
+    });
+  }
+
   try {
-    // Brevo API Request Payload
     const emailData = {
       sender: { 
         name: "Tameer Fabricators", 
-        email: process.env.EMAIL_USER // Aapki verified email ya Brevo sender email
+        email: process.env.EMAIL_USER 
       },
       to: [
         { 
@@ -47,13 +63,12 @@ app.post('/api/contact', async (req, res) => {
       `,
     };
 
-    // Send email using Brevo HTTP API (No SMTP / No Port Blocking)
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'accept': 'application/json',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
         'api-key': process.env.BREVO_API_KEY,
-        'content-type': 'application/json',
       },
       body: JSON.stringify(emailData),
     });
@@ -72,10 +87,10 @@ app.post('/api/contact', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Email Error:', error);
+    console.error('Email Error:', error.message || error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Request saved, but failed to send email. Check backend console.' 
+      message: 'Failed to send email. Check backend console.' 
     });
   }
 });

@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState } from "react";
+import { Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    width: '',
-    height: '',
-    message: '',
+    name: "",
+    phone: "",
+    width: "",
+    height: "",
+    message: "",
   });
 
-  const [status, setStatus] = useState({ type: null, message: '' });
+  const [status, setStatus] = useState({ type: null, message: "" });
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -25,43 +25,47 @@ export default function ContactForm() {
 
     if (!formData.name.trim() || !formData.phone.trim()) {
       setStatus({
-        type: 'error',
-        message: 'Name and Phone number are required fields.',
+        type: "error",
+        message: "Name and Phone number are required fields.",
       });
       return;
     }
 
     setLoading(true);
-    setStatus({ type: null, message: '' });
+    setStatus({ type: null, message: "" });
 
     try {
-      const response = await fetch('https://tameer-fabricator.onrender.com/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("http://localhost:5001/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       const data = await response.json();
 
       if (response.ok && data.success) {
         setStatus({
-          type: 'success',
-          message: data.message || 'Quote request submitted successfully!',
+          type: "success",
+          message: data.message || "Quote request submitted successfully!",
         });
-        setFormData({ name: '', phone: '', width: '', height: '', message: '' });
+        setFormData({
+          name: "",
+          phone: "",
+          width: "",
+          height: "",
+          message: "",
+        });
       } else {
         setStatus({
-          type: 'error',
-          message: data.message || 'Failed to submit quote request.',
+          type: "error",
+          message: data.message || "Failed to submit quote request.",
         });
       }
     } catch (error) {
-      console.error('Submission Error:', error);
+      console.error("Submission Error:", error);
       setStatus({
-        type: 'error',
-        message: 'Server error! Please check if backend is running on port 5001.',
+        type: "error",
+        message:
+          "Server error! Please check if backend is running on port 5001.",
       });
     } finally {
       setLoading(false);
@@ -73,12 +77,16 @@ export default function ContactForm() {
       {status.message && (
         <div
           className={`p-4 rounded-xl flex items-center gap-3 text-sm font-semibold ${
-            status.type === 'success'
-              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-              : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+            status.type === "success"
+              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+              : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
           }`}
         >
-          {status.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+          {status.type === "success" ? (
+            <CheckCircle2 size={20} />
+          ) : (
+            <AlertCircle size={20} />
+          )}
           <span>{status.message}</span>
         </div>
       )}
