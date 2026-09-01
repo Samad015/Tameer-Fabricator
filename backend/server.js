@@ -111,7 +111,7 @@ if (process.env.NODE_ENV === 'production') {
   
   app.use(express.static(frontendPath));
   
-  app.get('*', (req, res, next) => {
+  app.get('/*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
