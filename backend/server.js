@@ -105,11 +105,17 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Serve Static Files (Frontend Build) - Only if production
+// Serve Static Files (Frontend Build) - Vercel & Production Safe
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  app.use((req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+  const frontendPath = path.join(__dirname, '../frontend/dist');
+  
+  app.use(express.static(frontendPath));
+  
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
   });
 }
 
