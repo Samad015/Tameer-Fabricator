@@ -105,13 +105,13 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Serve Static Files (Frontend Build) - Vercel & Production Safe
+// Serve Static Files (Frontend Build) - Vercel & Production Safe (Using middleware instead of regex to prevent path-to-regexp crash)
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../frontend/dist');
   
   app.use(express.static(frontendPath));
   
-  app.get(/.*/, (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
