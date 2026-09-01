@@ -73,7 +73,7 @@ export default function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} id="contact-form" className="space-y-4">
       {status.message && (
         <div
           className={`p-4 rounded-xl flex items-center gap-3 text-sm font-semibold ${
