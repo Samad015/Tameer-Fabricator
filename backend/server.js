@@ -105,7 +105,7 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Serve Static Files (Frontend Build) - Vercel & Production Safe (Using middleware instead of regex to prevent path-to-regexp crash)
+// Serve Static Files (Frontend Build) - Vercel & Production Safe
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../frontend/dist');
   
@@ -119,10 +119,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = app;
