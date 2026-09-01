@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, Settings, Hand, FileText } from 'lucide-react';
+import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, Settings, Hand, FileText, Blinds, Cog, Building } from 'lucide-react';
 
 export default function Estimator() {
   // Configured Rates
@@ -24,7 +24,7 @@ export default function Estimator() {
     const price = weight * PRICE_PER_KG;
 
     setResult({
-      type: shutterType === 'manual' ? 'Manual Shutter' : 'Gear Shutter',
+      type: shutterType === 'manual' ? 'Manual Shutter' : shutterType === 'gear' ? 'Gear Shutter' : 'Motorized Shutter',
       totalSqFt: area,
       totalWeight: weight,
       estimatedPrice: price,
@@ -35,7 +35,8 @@ export default function Estimator() {
   const shutterCost = result ? result.estimatedPrice : 0;
   const lockCost = 700;
   const gearCost = shutterType === 'gear' ? 5000 : 0;
-  const finalTotal = shutterCost + lockCost + gearCost;
+  const motorCost = shutterType === 'motorized' ? 30000 : 0;
+  const finalTotal = shutterCost + lockCost + gearCost + motorCost;
 
   return (
     <section id="estimator" className="py-20 bg-slate-900 text-white border-t border-slate-800">
@@ -65,7 +66,7 @@ export default function Estimator() {
               <label className="block text-xs font-bold text-slate-300 mb-2 uppercase">
                 Select Shutter Type *
               </label>
-              <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-900 border border-slate-800 rounded-xl">
+              <div className="grid grid-cols-3 gap-3 p-1.5 bg-slate-900 border border-slate-800 rounded-xl">
                 <button
                   type="button"
                   onClick={() => {
@@ -78,7 +79,7 @@ export default function Estimator() {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Hand size={16} /> Manual (2.2 kg)
+                  <Hand size={16} /> Manual 
                 </button>
                 <button
                   type="button"
@@ -92,7 +93,21 @@ export default function Estimator() {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Settings size={16} /> Gear (2.6 kg)
+                  <Cog size={16} /> Gear 
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShutterType('motorized');
+                    setResult(null);
+                  }}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase transition cursor-pointer ${
+                    shutterType === 'motorized'
+                      ? 'bg-amber-500 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Building size={16} /> Motorized 
                 </button>
               </div>
             </div>
@@ -230,7 +245,7 @@ export default function Estimator() {
           <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
             <FileText size={18} className="text-amber-500" />
             <h3 className="text-lg font-bold text-white uppercase tracking-wider">
-              Cost Components Summary ({shutterType === 'manual' ? 'Manual Shutter' : 'Gear Shutter'})
+              Cost Components Summary ({shutterType === 'manual' ? 'Manual Shutter' : shutterType === 'gear' ? 'Gear Shutter' : 'Motorized Shutter'})
             </h3>
           </div>
 
@@ -260,6 +275,14 @@ export default function Estimator() {
                   </tr>
                 )}
 
+                {shutterType === 'motorized' && (
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold text-white">Motor Charges</td>
+                    <td className="p-3 text-slate-400">Fixed Charge</td>
+                    <td className="p-3 text-right font-mono font-bold text-amber-400">₹30,000.00</td>
+                  </tr>
+                )}
+
                 <tr className="hover:bg-slate-900/40">
                   <td className="p-3 font-semibold text-white">Side Lock Charges</td>
                   <td className="p-3 text-slate-400">Fixed Charge</td>
@@ -278,7 +301,7 @@ export default function Estimator() {
           </div>
 
           <p className="mt-4 text-xs text-slate-400 italic bg-slate-900/50 p-3 rounded-xl border border-slate-800/60">
-            * <strong className="text-amber-500 font-semibold">Excluded Freight Charge:</strong> Distance (km) × Per km Rate (e.g., ₹100/km)
+            * <strong className="text-amber-500 font-semibold">Excluded Freight Charge:</strong> Distance (km) × Per km Rate (e.g., ₹50/km)
           </p>
         </div>
 

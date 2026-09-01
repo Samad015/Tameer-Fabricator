@@ -53,7 +53,7 @@ export default function Hero() {
           </a>
           <a 
             href="#contact" 
-            onClick={(e) => scrollToSection(e, 'contact')}
+            onClick={(e) => scrollToSection(e, 'contact-form')}
             className="bg-slate-950/90 border-2 border-amber-500 px-8 py-4 rounded-xl font-extrabold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition text-lg flex items-center justify-center gap-2 shadow-2xl shadow-black uppercase tracking-wide cursor-pointer"
           >
             Request a Free Quote

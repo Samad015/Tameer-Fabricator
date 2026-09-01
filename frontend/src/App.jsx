@@ -23,23 +23,23 @@ export default function App() {
 
       {page === 'home' && (
         <main>
-          {/* 2. Hero Section */}
+          {/* 1. Hero Section */}
           <Hero />
 
-          {/* 3. Services Section */}
+          {/* 2. Services Section */}
           <Services />
 
-          {/* 4. Calculate Price (Estimator) */}
+          {/* 3. Calculate Price (Estimator) */}
           <Estimator />
 
 
-          {/* 5. Specifications Chart (Calculate ke theek niche) */}
+          {/* 4. Specifications Chart (Calculate ke theek niche) */}
           <Specifications />
 
-          {/* 6. About Section */}
+          {/* 5. About Section */}
           <About />
 
-          {/* 7. Contact Form Section */}
+          {/* 6. Contact Form Section */}
           <ContactForm />
         </main>
       )}

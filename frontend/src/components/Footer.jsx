@@ -1,10 +1,10 @@
 import React from 'react';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Mail, MapPin, ExternalLink } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-3 gap-8 ">
         <div>
           <h3 className="text-xl font-black text-amber-500 uppercase mb-4">Tameer Fabricator's</h3>
           <p className="text-sm leading-relaxed">
@@ -16,19 +16,19 @@ export default function Footer() {
           <h4 className="text-lg font-bold text-white mb-4">Contact Details</h4>
           <ul className="space-y-3 text-sm">
             <li className="flex items-center gap-2"><MapPin size={18} className="text-amber-500" /> Bareilly, Uttar Pradesh, India</li>
-            <li className="flex items-center gap-2">
-              <Phone size={18} className="text-amber-500" /> 
-              <a href="tel:+918439860719" className="hover:text-amber-500 transition">+91 84398 60719</a>
-            </li>
+            
             <li className="flex items-center gap-2"><Mail size={18} className="text-amber-500" /> contact@tameerfabricators.com</li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-lg font-bold text-white mb-4">Quick Contact</h4>
-          <div className="flex gap-4 text-sm font-semibold">
-            <a href="tel:+918439860719" className="hover:text-amber-500 transition">Direct Call</a>
-          </div>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-2">
+              <ExternalLink size={18} className="text-amber-500" /> 
+              <a href="https://www.indiamart.com/tameer-fabricators-bareilly/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">IndiaMART Profile</a>
+            </li>
+          </ul>
         </div>
       </div>
 

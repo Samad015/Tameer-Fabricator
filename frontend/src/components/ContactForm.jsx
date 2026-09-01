@@ -7,17 +7,27 @@ export default function ContactForm() {
     phone: "",
     width: "",
     height: "",
+    shutterType: "",
     message: "",
   });
 
   const [status, setStatus] = useState({ type: null, message: "" });
   const [loading, setLoading] = useState(false);
+  const [showShutterPopup, setShowShutterPopup] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleShutterSelect = (type) => {
+    setFormData({
+      ...formData,
+      shutterType: type,
+    });
+    setShowShutterPopup(false);
   };
 
   const handleSubmit = async (e) => {
@@ -52,6 +62,7 @@ export default function ContactForm() {
           phone: "",
           width: "",
           height: "",
+          shutterType: "",
           message: "",
         });
       } else {
@@ -73,27 +84,27 @@ export default function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} id="contact-form" className="space-y-4">
+    <form onSubmit={handleSubmit} id="contact-form" className="space-y-3 max-w-md mx-auto">
       {status.message && (
         <div
-          className={`p-4 rounded-xl flex items-center gap-3 text-sm font-semibold ${
+          className={`p-3 rounded-lg flex items-center gap-2 text-xs font-semibold ${
             status.type === "success"
               ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
               : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
           }`}
         >
           {status.type === "success" ? (
-            <CheckCircle2 size={20} />
+            <CheckCircle2 size={16} />
           ) : (
-            <AlertCircle size={20} />
+            <AlertCircle size={16} />
           )}
           <span>{status.message}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-200">
             Full Name *
           </label>
           <input
@@ -103,12 +114,12 @@ export default function ContactForm() {
             value={formData.name}
             onChange={handleChange}
             placeholder="John Doe"
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-200">
             Phone Number *
           </label>
           <input
@@ -118,14 +129,14 @@ export default function ContactForm() {
             value={formData.phone}
             onChange={handleChange}
             placeholder="+91 00000 00000"
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-200">
             Width (in ft)
           </label>
           <input
@@ -134,12 +145,12 @@ export default function ContactForm() {
             value={formData.width}
             onChange={handleChange}
             placeholder="e.g. 10"
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold mb-2 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-200">
             Height (in ft)
           </label>
           <input
@@ -148,40 +159,92 @@ export default function ContactForm() {
             value={formData.height}
             onChange={handleChange}
             placeholder="e.g. 8"
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold mb-2 text-slate-200">
+        <label className="block text-xs font-semibold mb-1 text-slate-200">
+          Shutter Type
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowShutterPopup(true)}
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-left text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer"
+        >
+          {formData.shutterType ? formData.shutterType : "Select Shutter Type"}
+        </button>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold mb-1 text-slate-200">
           Requirements / Project Specs
         </label>
         <textarea
           name="message"
-          rows="4"
+          rows="3"
           value={formData.message}
           onChange={handleChange}
           placeholder="Describe your requirement..."
-          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition resize-none"
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition resize-none"
         ></textarea>
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl hover:bg-amber-400 transition text-lg flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-amber-500 text-slate-950 font-black py-2.5 rounded-lg hover:bg-amber-400 transition text-sm flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <>
-            <Loader2 size={20} className="animate-spin" /> Submitting...
+            <Loader2 size={16} className="animate-spin" /> Submitting...
           </>
         ) : (
           <>
-            <Send size={20} /> Submit Quote Request
+            <Send size={16} /> Submit Quote Request
           </>
         )}
       </button>
+
+      {showShutterPopup && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowShutterPopup(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-xl p-4 w-full max-w-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-white mb-3">
+              Select Shutter Type
+            </h3>
+            <div className="space-y-2">
+              {["Manual", "Gear", "Motorized"].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleShutterSelect(type)}
+                  className={`w-full text-left p-2 text-sm rounded-lg border transition cursor-pointer ${
+                    formData.shutterType === type
+                      ? "bg-amber-500 border-amber-500 text-slate-950 font-bold"
+                      : "bg-slate-800 border-slate-700 text-white hover:border-amber-500"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowShutterPopup(false)}
+              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-700 text-slate-300 hover:border-amber-500 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
