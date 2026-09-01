@@ -3,6 +3,13 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Import Database connection and Auth Routes
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+
+// Connect to MongoDB Database
+connectDB();
+
 // Debug logs to verify environment variables load correctly
 console.log("Loaded API Key:", process.env.BREVO_API_KEY ? "Key Present (Length: " + process.env.BREVO_API_KEY.length + ")" : "KEY IS MISSING!");
 console.log("Loaded Email:", process.env.EMAIL_USER);
@@ -22,6 +29,9 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend is running successfully' });
 });
+
+// Authentication Routes (Register, Verify OTP, Login)
+app.use('/api/auth', authRoutes);
 
 // Contact / Quote Request Route
 app.post('/api/contact', async (req, res) => {
@@ -102,6 +112,7 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
   });
 }
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
