@@ -1,23 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, User } from 'lucide-react';
 
-export default function Navbar({ onNavigate }) {
+export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
+  const navigate = useNavigate();
 
-  const goTo = (page) => {
+  const goTo = (path) => {
     setIsOpen(false);
     setIsProfileOpen(false);
-    if (onNavigate) onNavigate(page);
+    navigate(path);
   };
 
   const scrollToSection = (e, id) => {
     e.preventDefault();
     setIsOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    // Agar home page par nahi hain, toh pehle home par jayein
+    if (window.location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -38,7 +49,7 @@ export default function Navbar({ onNavigate }) {
         <div className="flex justify-between h-20 items-center">
           
           {/* Round Logo Section */}
-          <a href="#" className="flex items-center gap-3 group">
+          <a href="/" className="flex items-center gap-3 group">
             <img 
               src="/images/logo.jpg" 
               alt="Tameer Fabricator's Logo" 
@@ -80,13 +91,13 @@ export default function Navbar({ onNavigate }) {
               {isProfileOpen && (
                 <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
                   <button
-                    onClick={() => goTo('login')}
+                    onClick={() => goTo('/login')}
                     className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
                   >
                     Login
                   </button>
                   <button
-                    onClick={() => goTo('signup')}
+                    onClick={() => goTo('/register')}
                     className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
                   >
                     Sign Up
@@ -128,13 +139,13 @@ export default function Navbar({ onNavigate }) {
             {isProfileOpen && (
               <div className="mt-2 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
                 <button
-                  onClick={() => goTo('login')}
+                  onClick={() => goTo('/login')}
                   className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => goTo('signup')}
+                  onClick={() => goTo('/register')}
                   className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
                 >
                   Sign Up

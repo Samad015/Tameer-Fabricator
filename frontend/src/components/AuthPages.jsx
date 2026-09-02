@@ -1,96 +1,330 @@
-import React, { useState } from 'react'; 
-import { Mail, Lock, User, Building2, Eye, EyeOff } from 'lucide-react'; 
- 
-function AuthCard({ mode = 'login', onNavigate }) { 
-  const [showPassword, setShowPassword] = useState(false); 
-  const [showConfirm, setShowConfirm] = useState(false); 
-  const [isCorporate, setIsCorporate] = useState(false); 
+import React, { useState } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { User, Building2, MapPin, Phone, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-  // Form States
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [otp, setOtp] = useState('');
-  
-  // Flow states for Signup (Step 1: Register & Send OTP -> Step 2: Verify OTP)
-  const [step, setStep] = useState(1); 
+// 1. Login Component
+export const LoginPage = () => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
 
-  const isLogin = mode === 'login'; 
- 
-  const goTo = (next) => { 
-    if (onNavigate) onNavigate(next); 
-  }; 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  // --- HANDLE LOGIN ---
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setMessage('');
 
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(formData)
       });
       const data = await response.json();
-      console.log('Login Response:', data);
 
-      if (data.success) {
-        alert('Login Successful!');
-        // Token ko localStorage me save kar sakte hain
-        localStorage.setItem('token', data.token);
-        goTo('home'); // ya jo bhi home route ho
-      } else {
-        alert(data.message || 'Login failed');
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
+
+      alert('Login successful!');
+      navigate('/');
     } catch (err) {
-      console.error('Login Error:', err);
-      alert('Something went wrong during login.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- HANDLE REGISTER (Step 1) ---
-  const handleRegister = async (e) => {
+  return (
+    <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full bg-[#111827] border border-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Welcome Back</h2>
+          <p className="text-gray-400 text-sm mt-1">Login to Tameer Fabricator's Portal</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-3 bg-red-900/50 border border-red-500 text-red-200 text-sm rounded-lg text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Email Address *</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Mail size={18} /></span>
+              <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="name@gmail.com" className="w-full pl-10 pr-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Password *</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Lock size={18} /></span>
+              <input type={showPassword ? 'text' : 'password'} name="password" required value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full pl-10 pr-10 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white">
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full mt-4 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold rounded-xl transition duration-200 shadow-lg text-sm tracking-wide disabled:opacity-50">
+            {loading ? 'Logging in...' : 'LOGIN'}
+          </button>
+
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-400">
+              Don't have an account? <Link to="/register" className="text-amber-400 hover:underline font-medium">Register Now</Link>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// 2. Register Component (with optional fields)
+export const Register = () => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    companyName: '',
+    address: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    isCorporate: false,
+    gstin: '',
+    pan: '',
+    udyamNumber: '',
+    aadhaarNumber: '',
+    accountNumber: '',
+    ifsc: '',
+    accountHolderName: '',
+    bankName: ''
+  });
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert('Passwords do not match!');
+    setError('');
+
+    if (!formData.name || !formData.companyName || !formData.address || !formData.phone || !formData.email || !formData.password) {
+      setError('Please fill in all mandatory fields (*).');
       return;
     }
-    setLoading(true);
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, companyName, isCorporate })
+        body: JSON.stringify(formData)
       });
       const data = await response.json();
-      console.log('Register Response:', data);
 
-      if (data.success) {
-        alert('Registration successful! OTP sent to your email.');
-        setStep(2); // Move to OTP verification step
-      } else {
-        alert(data.message || 'Registration failed');
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
       }
+
+      alert('Registration successful! Please verify OTP.');
+      navigate('/verify-otp', { state: { email: formData.email } });
     } catch (err) {
-      console.error('Register Error:', err);
-      alert('Something went wrong during registration.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- HANDLE VERIFY OTP (Step 2) ---
-  const handleVerifyOtp = async (e) => {
+  return (
+    <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center px-4 py-12">
+      <div className="max-w-2xl w-full bg-[#111827] border border-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Create Account</h2>
+          <p className="text-gray-400 text-sm mt-1">Join Tameer Fabricator's Business Portal</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-3 bg-red-900/50 border border-red-500 text-red-200 text-sm rounded-lg text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <h3 className="text-amber-400 text-sm font-semibold uppercase tracking-wider mb-3 pb-1 border-b border-gray-800">
+              Primary Details (Mandatory *)
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Full Name *</label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><User size={18} /></span>
+                  <input type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="Enter your full name" className="w-full pl-10 pr-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Company Name *</label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Building2 size={18} /></span>
+                  <input type="text" name="companyName" required value={formData.companyName} onChange={handleChange} placeholder="Tameer Fabricators" className="w-full pl-10 pr-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Business Address *</label>
+                <div className="relative">
+                  <span className="absolute top-3 left-3 text-gray-400"><MapPin size={18} /></span>
+                  <textarea name="address" required rows="2" value={formData.address} onChange={handleChange} placeholder="Enter complete address" className="w-full pl-10 pr-4 py-2 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm resize-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Phone Number *</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Phone size={18} /></span>
+                    <input type="tel" name="phone" required value={formData.phone} onChange={handleChange} placeholder="9876543210" className="w-full pl-10 pr-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Email Address (Gmail) *</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Mail size={18} /></span>
+                    <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="name@gmail.com" className="w-full pl-10 pr-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Password *</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Lock size={18} /></span>
+                    <input type={showPassword ? 'text' : 'password'} name="password" required value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full pl-10 pr-10 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white">
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Confirm Password *</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Lock size={18} /></span>
+                    <input type="password" name="confirmPassword" required value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className="w-full pl-10 pr-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 text-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-3 pb-1 border-b border-gray-800">
+              Business Details (Optional)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">GSTIN</label>
+                <input type="text" name="gstin" value={formData.gstin} onChange={handleChange} placeholder="GSTIN Number" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">PAN</label>
+                <input type="text" name="pan" value={formData.pan} onChange={handleChange} placeholder="PAN Number" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Udyam Number</label>
+                <input type="text" name="udyamNumber" value={formData.udyamNumber} onChange={handleChange} placeholder="Udyam Number" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">ID Number</label>
+                <input type="text" name="aadhaarNumber" value={formData.aadhaarNumber} onChange={handleChange} placeholder="ID Number" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-3 pb-1 border-b border-gray-800">
+              Bank Details (Optional)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Account Number</label>
+                <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} placeholder="Account Number" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">IFSC Code</label>
+                <input type="text" name="ifsc" value={formData.ifsc} onChange={handleChange} placeholder="IFSC Code" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Account Holder Name</label>
+                <input type="text" name="accountHolderName" value={formData.accountHolderName} onChange={handleChange} placeholder="Holder Name" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Bank Name</label>
+                <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} placeholder="Bank Name" className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center pt-2">
+            <input type="checkbox" name="isCorporate" id="isCorporate" checked={formData.isCorporate} onChange={handleChange} className="w-4 h-4 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-500" />
+            <label htmlFor="isCorporate" className="ml-2 text-sm text-gray-300">Register as Corporate Client?</label>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full mt-4 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold rounded-xl transition duration-200 shadow-lg text-sm tracking-wide disabled:opacity-50">
+            {loading ? 'Processing...' : 'REGISTER & SEND OTP'}
+          </button>
+
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-400">
+              Already have an account? <Link to="/login" className="text-amber-400 hover:underline font-medium">Login Now</Link>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export const VerifyOtp = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email || '';
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
     try {
@@ -100,250 +334,55 @@ function AuthCard({ mode = 'login', onNavigate }) {
         body: JSON.stringify({ email, otp })
       });
       const data = await response.json();
-      console.log('Verify OTP Response:', data);
 
-      if (data.success) {
-        alert('Email verified successfully! You can now log in.');
-        goTo('login');
-      } else {
-        alert(data.message || 'Invalid OTP');
+      if (!response.ok) {
+        throw new Error(data.message || 'Verification failed');
       }
+
+      alert('Account verified successfully! Please login.');
+      navigate('/login');
     } catch (err) {
-      console.error('OTP Verify Error:', err);
-      alert('Something went wrong during OTP verification.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
- 
-  return ( 
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden"> 
-      <div className="absolute inset-0 opacity-[0.04] pointer-events-none"> 
-        <div className="absolute top-0 left-1/4 w-px h-full bg-amber-500" /> 
-        <div className="absolute top-0 left-2/4 w-px h-full bg-amber-500" /> 
-        <div className="absolute top-0 left-3/4 w-px h-full bg-amber-500" /> 
-      </div> 
- 
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8"> 
-        <h2 className="text-3xl font-bold text-white text-center mb-8"> 
-          {isLogin ? 'Login' : step === 1 ? 'Create Account' : 'Verify OTP'} 
-        </h2> 
- 
-        {isLogin ? ( 
-          <form onSubmit={handleLogin}> 
-            {/* Email */} 
-            <div className="relative mb-4"> 
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-              <input 
-                type="email" 
-                placeholder="Email Address" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-              /> 
-            </div> 
- 
-            {/* Password */} 
-            <div className="relative mb-3"> 
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-              <input 
-                type={showPassword ? 'text' : 'password'} 
-                placeholder="Password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-              /> 
-              <button 
-                type="button" 
-                onClick={() => setShowPassword(!showPassword)} 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
-              > 
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />} 
-              </button> 
-            </div> 
- 
-            <div className="text-right mb-6"> 
-              <a href="#" className="text-sm text-slate-400 hover:text-amber-500 transition"> 
-                Forgot Password? 
-              </a> 
-            </div> 
- 
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
-            > 
-              {loading ? 'Logging in...' : 'Log In'} 
-            </button> 
- 
-            <p className="text-center text-sm text-slate-400"> 
-              Don't have an account?{' '} 
-              <button 
-                type="button"
-                onClick={() => goTo('signup')} 
-                className="text-amber-500 font-semibold hover:underline" 
-              > 
-                Register Now 
-              </button> 
-            </p> 
-          </form> 
-        ) : ( 
-          // SIGNUP / OTP FLOW
-          <>
-            {step === 1 ? (
-              <form onSubmit={handleRegister}> 
-                {/* Full Name */} 
-                <div className="relative mb-4"> 
-                  <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type="text" 
-                    placeholder="Full Name" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div> 
- 
-                {/* Company Name */} 
-                <div className="relative mb-4"> 
-                  <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type="text" 
-                    placeholder="Company Name (Optional)" 
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div> 
- 
-                {/* Email */} 
-                <div className="relative mb-4"> 
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type="email" 
-                    placeholder="Email Address" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div> 
- 
-                {/* Password */} 
-                <div className="relative mb-4"> 
-                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type={showPassword ? 'text' : 'password'} 
-                    placeholder="Password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
-                  > 
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />} 
-                  </button> 
-                </div> 
- 
-                {/* Confirm Password */} 
-                <div className="relative mb-4"> 
-                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type={showConfirm ? 'text' : 'password'} 
-                    placeholder="Confirm Password" 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                  <button 
-                    type="button" 
-                    onClick={() => setShowConfirm(!showConfirm)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
-                  > 
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />} 
-                  </button> 
-                </div> 
- 
-                {/* Corporate checkbox */} 
-                <label className="flex items-center gap-2 mb-6 cursor-pointer"> 
-                  <input 
-                    type="checkbox" 
-                    checked={isCorporate} 
-                    onChange={(e) => setIsCorporate(e.target.checked)} 
-                    className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500" 
-                  /> 
-                  <span className="text-sm text-slate-300"> 
-                    Register as Corporate Client? 
-                  </span> 
-                </label> 
- 
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
-                > 
-                  {loading ? 'Processing...' : 'Register & Send OTP'} 
-                </button> 
- 
-                <p className="text-center text-sm text-slate-400"> 
-                  Already have an account?{' '} 
-                  <button 
-                    type="button"
-                    onClick={() => goTo('login')} 
-                    className="text-amber-500 font-semibold hover:underline" 
-                  > 
-                    Login Now 
-                  </button> 
-                </p> 
-              </form> 
-            ) : (
-              /* STEP 2: OTP VERIFICATION FORM */
-              <form onSubmit={handleVerifyOtp}>
-                <p className="text-sm text-slate-300 mb-4 text-center">
-                  Please enter the 6-digit OTP sent to <span className="text-amber-400">{email}</span>
-                </p>
-                <div className="relative mb-6"> 
-                  <input 
-                    type="text" 
-                    placeholder="Enter 6-digit OTP" 
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    maxLength={6}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-400 text-sm tracking-widest text-center focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div>
 
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
-                > 
-                  {loading ? 'Verifying...' : 'Verify OTP'} 
-                </button>
-              </form>
-            )}
-          </>
-        )} 
-      </div> 
-    </div> 
-  ); 
-} 
+  return (
+    <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full bg-[#111827] border border-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Verify OTP</h2>
+          <p className="text-gray-400 text-sm mt-1">Enter the OTP sent to <span className="text-amber-400">{email || 'your email'}</span></p>
+        </div>
 
-export function LoginPage({ onNavigate }) { 
-  return <AuthCard mode="login" onNavigate={onNavigate} />; 
-} 
- 
-export function SignupPage({ onNavigate }) { 
-  return <AuthCard mode="signup" onNavigate={onNavigate} />; 
-} 
- 
-export default AuthCard;
+        {error && (
+          <div className="mb-6 p-3 bg-red-900/50 border border-red-500 text-red-200 text-sm rounded-lg text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase mb-1">Enter OTP *</label>
+            <input 
+              type="text" 
+              maxLength="6" 
+              required 
+              value={otp} 
+              onChange={(e) => setOtp(e.target.value)} 
+              placeholder="123456" 
+              className="w-full px-4 py-2.5 bg-[#1f2937] border border-gray-700 rounded-xl text-white tracking-widest text-center text-lg placeholder-gray-500 focus:outline-none focus:border-amber-500" 
+            />
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full mt-4 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold rounded-xl transition duration-200 shadow-lg text-sm tracking-wide disabled:opacity-50">
+            {loading ? 'Verifying...' : 'VERIFY OTP'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export { Register as SignupPage };
