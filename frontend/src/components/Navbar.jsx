@@ -1,24 +1,29 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Menu, X, Phone, User, Home } from "lucide-react";
 
-export default function Navbar({ onNavigate }) {
+export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
+  const navigate = useNavigate();
 
   const goTo = (path) => {
     setIsOpen(false);
     setIsProfileOpen(false);
-    if (onNavigate) onNavigate(path);
+    navigate(path);
   };
 
   const scrollToSection = (e, id) => {
     e.preventDefault();
     setIsOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
+    navigate('/');
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
   };
 
   // Close profile dropdown when clicking outside
@@ -38,7 +43,7 @@ export default function Navbar({ onNavigate }) {
         <div className="flex justify-between h-20 items-center">
           {/* Home Icon Button */}
           <button
-            onClick={() => goTo("home")}
+            onClick={() => goTo("/")}
             aria-label="Go to Homepage"
             className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition"
           >
@@ -46,7 +51,7 @@ export default function Navbar({ onNavigate }) {
           </button>
 
           {/* Round Logo Section */}
-          <a href="#" className="flex items-center gap-3 group">
+          <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left">
             <img
               src="/images/logo.jpg"
               alt="Tameer Fabricator's Logo"
@@ -60,35 +65,35 @@ export default function Navbar({ onNavigate }) {
                 Tameer Fabricator's
               </span>
             </div>
-          </a>
+          </button>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-8 items-center font-medium">
             <a
               href="#services"
               onClick={(e) => scrollToSection(e, "services")}
-              className="hover:text-amber-500 transition"
+              className="hover:text-amber-500 transition cursor-pointer"
             >
               Services
             </a>
             <a
               href="#specifications"
               onClick={(e) => scrollToSection(e, "specifications")}
-              className="hover:text-amber-500 transition"
+              className="hover:text-amber-500 transition cursor-pointer"
             >
               Specifications
             </a>
             <a
               href="#about"
               onClick={(e) => scrollToSection(e, "about")}
-              className="hover:text-amber-500 transition"
+              className="hover:text-amber-500 transition cursor-pointer"
             >
               About
             </a>
             <a
               href="#contact"
               onClick={(e) => scrollToSection(e, "contact-form")}
-              className="hover:text-amber-500 transition"
+              className="hover:text-amber-500 transition cursor-pointer"
             >
               Contact
             </a>
@@ -112,13 +117,13 @@ export default function Navbar({ onNavigate }) {
               {isProfileOpen && (
                 <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
                   <button
-                    onClick={() => goTo("login")}
+                    onClick={() => goTo("/login")}
                     className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
                   >
                     Login
                   </button>
                   <button
-                    onClick={() => goTo("signup")}
+                    onClick={() => goTo("/register")}
                     className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
                   >
                     Sign Up
@@ -190,13 +195,13 @@ export default function Navbar({ onNavigate }) {
             {isProfileOpen && (
               <div className="mt-2 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
                 <button
-                  onClick={() => goTo("login")}
+                  onClick={() => goTo("/login")}
                   className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => goTo("signup")}
+                  onClick={() => goTo("/register")}
                   className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
                 >
                   Sign Up
