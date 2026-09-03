@@ -212,7 +212,7 @@ function AuthCard({ mode = 'login', onNavigate }) {
                   <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
                   <input 
                     type="text" 
-                    placeholder="Company Name (Optional)" 
+                    placeholder="Business Name (Optional)" 
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 

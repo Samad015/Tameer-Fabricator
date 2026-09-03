@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, MapPin, ExternalLink } from 'lucide-react';
+import { Mail, MapPin, ExternalLink ,  TvMinimalPlay, Clapperboard} from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -18,11 +18,22 @@ export default function Footer() {
             <li className="flex items-center gap-2"><MapPin size={18} className="text-amber-500" /> Bareilly, Uttar Pradesh, India</li>
             
             <li className="flex items-center gap-2"><Mail size={18} className="text-amber-500" /> contact@tameerfabricators.com</li>
+
+            <li className="flex items-center gap-2">
+              < Clapperboard size={18} className="text-amber-500" />
+              <a href="https://www.instagram.com/tameerfabricators?igsi=MWE5ZDlrN2R2YWJ4OQ==" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">Instagram</a>
+            </li>
+
+            <li className="flex items-center gap-2">
+              <TvMinimalPlay size={18} className="text-amber-500" />
+              <a href="https://youtube.com/@tameerfabricators?si=cw6a_s71E4WpwEqn" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">YouTube</a>
+            </li>
+            
           </ul>
         </div>
 
         <div>
-          <h4 className="text-lg font-bold text-white mb-4">Quick Contact</h4>
+          <h4 className="text-lg font-bold text-white mb-4">We are on</h4>
           <ul className="space-y-3 text-sm">
             <li className="flex items-center gap-2">
               <ExternalLink size={18} className="text-amber-500" /> 

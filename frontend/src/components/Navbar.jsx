@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, Phone, User } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { Menu, X, Phone, User, Home } from "lucide-react";
 
 export default function Navbar({ onNavigate }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +17,7 @@ export default function Navbar({ onNavigate }) {
     setIsOpen(false);
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -28,20 +28,28 @@ export default function Navbar({ onNavigate }) {
         setIsProfileOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
     <nav className="bg-slate-900 text-white sticky top-0 z-50 border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
-          
+          {/* Home Icon Button */}
+          <button
+            onClick={() => goTo("home")}
+            aria-label="Go to Homepage"
+            className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition"
+          >
+            <Home size={20} />
+          </button>
+
           {/* Round Logo Section */}
           <a href="#" className="flex items-center gap-3 group">
-            <img 
-              src="/images/logo.jpg" 
-              alt="Tameer Fabricator's Logo" 
+            <img
+              src="/images/logo.jpg"
+              alt="Tameer Fabricator's Logo"
               className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md"
             />
             <div className="flex flex-col">
@@ -56,12 +64,36 @@ export default function Navbar({ onNavigate }) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-8 items-center font-medium">
-            <a href="#services" onClick={(e) => scrollToSection(e, 'services')} className="hover:text-amber-500 transition">Services</a>
-            <a href="#specifications" onClick={(e) => scrollToSection(e, 'specifications')} className="hover:text-amber-500 transition">Specifications</a>
-            <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="hover:text-amber-500 transition">About</a>
-            <a href="#contact" onClick={(e) => scrollToSection(e, 'contact-form')} className="hover:text-amber-500 transition">Contact</a>
-            <a 
-              href="tel:+918439860719" 
+            <a
+              href="#services"
+              onClick={(e) => scrollToSection(e, "services")}
+              className="hover:text-amber-500 transition"
+            >
+              Services
+            </a>
+            <a
+              href="#specifications"
+              onClick={(e) => scrollToSection(e, "specifications")}
+              className="hover:text-amber-500 transition"
+            >
+              Specifications
+            </a>
+            <a
+              href="#about"
+              onClick={(e) => scrollToSection(e, "about")}
+              className="hover:text-amber-500 transition"
+            >
+              About
+            </a>
+            <a
+              href="#contact"
+              onClick={(e) => scrollToSection(e, "contact-form")}
+              className="hover:text-amber-500 transition"
+            >
+              Contact
+            </a>
+            <a
+              href="tel:+918439860719"
               className="bg-amber-500 text-slate-950 px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-400 transition"
             >
               <Phone size={18} /> Call Now
@@ -80,13 +112,13 @@ export default function Navbar({ onNavigate }) {
               {isProfileOpen && (
                 <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
                   <button
-                    onClick={() => goTo('login')}
+                    onClick={() => goTo("login")}
                     className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
                   >
                     Login
                   </button>
                   <button
-                    onClick={() => goTo('signup')}
+                    onClick={() => goTo("signup")}
                     className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
                   >
                     Sign Up
@@ -98,7 +130,10 @@ export default function Navbar({ onNavigate }) {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-slate-200">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-slate-200"
+            >
               {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
@@ -108,11 +143,38 @@ export default function Navbar({ onNavigate }) {
       {/* Mobile Dropdown Menu */}
       {isOpen && (
         <div className="md:hidden bg-slate-900 px-4 pt-2 pb-6 space-y-3 border-b border-slate-800">
-          <a href="#services" onClick={(e) => scrollToSection(e, 'services')} className="block py-2 text-slate-300 hover:text-amber-500">Services</a>
-          <a href="#specifications" onClick={(e) => scrollToSection(e, 'specifications')} className="block py-2 text-slate-300 hover:text-amber-500">Specifications</a>
-          <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="block py-2 text-slate-300 hover:text-amber-500">About</a>
-          <a href="#contact" onClick={(e) => scrollToSection(e, 'contact-form')} className="block py-2 text-slate-300 hover:text-amber-500">Contact</a>
-          <a href="tel:+918439860719" className="inline-flex items-center justify-center gap-2 w-full bg-amber-500 text-slate-950 py-3 rounded-lg font-bold">
+          <a
+            href="#services"
+            onClick={(e) => scrollToSection(e, "services")}
+            className="block py-2 text-slate-300 hover:text-amber-500"
+          >
+            Services
+          </a>
+          <a
+            href="#specifications"
+            onClick={(e) => scrollToSection(e, "specifications")}
+            className="block py-2 text-slate-300 hover:text-amber-500"
+          >
+            Specifications
+          </a>
+          <a
+            href="#about"
+            onClick={(e) => scrollToSection(e, "about")}
+            className="block py-2 text-slate-300 hover:text-amber-500"
+          >
+            About
+          </a>
+          <a
+            href="#contact"
+            onClick={(e) => scrollToSection(e, "contact-form")}
+            className="block py-2 text-slate-300 hover:text-amber-500"
+          >
+            Contact
+          </a>
+          <a
+            href="tel:+918439860719"
+            className="inline-flex items-center justify-center gap-2 w-full bg-amber-500 text-slate-950 py-3 rounded-lg font-bold"
+          >
             <Phone size={18} /> Call Now
           </a>
 
@@ -128,13 +190,13 @@ export default function Navbar({ onNavigate }) {
             {isProfileOpen && (
               <div className="mt-2 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
                 <button
-                  onClick={() => goTo('login')}
+                  onClick={() => goTo("login")}
                   className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => goTo('signup')}
+                  onClick={() => goTo("signup")}
                   className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
                 >
                   Sign Up
