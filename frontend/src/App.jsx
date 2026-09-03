@@ -9,6 +9,7 @@ import Specifications from './components/Specifications';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import { LoginPage, SignupPage, VerifyOtp } from './components/AuthPages';
+import Dashboard from './components/Dashboard'; // <-- Dashboard component import kiya
 
 export default function App() {
   return (
@@ -33,6 +34,9 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
+
+        {/* Dashboard Route */}
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
 
       {/* Footer */}
@@ -40,5 +44,3 @@ export default function App() {
     </div>
   );
 }
-
-

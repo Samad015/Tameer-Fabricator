@@ -1,7 +1,8 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-// 1. Register Controller (Save data to MongoDB + Send OTP via Brevo)
+// 1. Register Controller
 exports.register = async (req, res) => {
   try {
     const {
@@ -10,22 +11,18 @@ exports.register = async (req, res) => {
       accountNumber, ifsc, accountHolderName, bankName
     } = req.body;
 
-    // Check if user already exists
     let user = await User.findOne({ email });
     if (user && user.isVerified) {
       return res.status(400).json({ success: false, message: 'User already exists with this email.' });
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     if (user && !user.isVerified) {
-      // Update unverified user data
       user.name = name;
       user.companyName = companyName;
       user.address = address;
@@ -43,7 +40,6 @@ exports.register = async (req, res) => {
       user.otp = otp;
       user.otpExpires = otpExpires;
     } else {
-      // Create new user record
       user = new User({
         name, companyName, address, phone, email,
         password: hashedPassword, isCorporate, gstin,
@@ -54,7 +50,6 @@ exports.register = async (req, res) => {
 
     await user.save();
 
-    // Send OTP via Brevo Email API
     const emailData = {
       sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
       to: [{ email: email, name: name }],
@@ -86,7 +81,7 @@ exports.register = async (req, res) => {
     res.status(200).json({ success: true, message: 'Registration successful. OTP sent to email.' });
 
   } catch (error) {
-    console.p?.error ? console.error('Register Error:', error.message) : console.log('Register Error:', error.message);
+    console.error('Register Error:', error.message);
     res.status(500).json({ success: false, message: error.message || 'Server error during registration' });
   }
 };
@@ -141,14 +136,48 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid email or password.' });
     }
 
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(200).json({ 
       success: true, 
       message: 'Login successful!', 
-      user: { name: user.name, email: user.email, companyName: user.companyName } 
+      token, 
+      user: { 
+        id: user._id,
+        name: user.name, 
+        email: user.email, 
+        companyName: user.companyName 
+      } 
     });
 
   } catch (error) {
     console.error('Login Error:', error.message);
     res.status(500).json({ success: false, message: 'Server error during login' });
+  }
+};
+
+// 4. Get Profile Controller
+exports.getProfile = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'No token provided, authorization denied' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found in database' });
+    }
+
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

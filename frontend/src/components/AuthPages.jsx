@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Building2, MapPin, Phone, Eye, EyeOff } from 'lucide-react';
 
 export function AuthCard({ mode = 'login', onNavigate }) {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isCorporate, setIsCorporate] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Current view ko manage karne ke liye local state
   const [currentMode, setCurrentMode] = useState(mode);
   const [step, setStep] = useState(mode === 'verify-otp' ? 2 : 1);
   const [otp, setOtp] = useState('');
@@ -23,7 +24,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
     gstin: '',
     pan: '',
     udyamNumber: '',
-    aadhaarNumber: '',
+    aadhaarNumber: '', // Redacted/Placeholder friendly ID input
     accountNumber: '',
     ifsc: '',
     accountHolderName: '',
@@ -33,9 +34,12 @@ export function AuthCard({ mode = 'login', onNavigate }) {
   const isLogin = currentMode === 'login';
   const isVerifyOtpMode = currentMode === 'verify-otp';
 
-  const goTo = (next) => {
-    setCurrentMode(next);
-    if (onNavigate) onNavigate(next);
+  const goTo = (nextPath) => {
+    setCurrentMode(nextPath);
+    if (nextPath === 'login') navigate('/login');
+    else if (nextPath === 'signup') navigate('/register');
+    else if (nextPath === 'verify-otp') navigate('/verify-otp');
+    if (onNavigate) onNavigate(nextPath);
   };
 
   const handleChange = (e) => {
@@ -57,7 +61,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
       if (data.success) {
         alert('Login Successful!');
         localStorage.setItem('token', data.token);
-        goTo('home');
+        navigate('/dashboard'); // Successful login par dashboard par redirect karein
       } else {
         alert(data.message || 'Login failed');
       }
@@ -91,7 +95,9 @@ export function AuthCard({ mode = 'login', onNavigate }) {
 
       if (data.success) {
         alert('Registration successful! OTP sent to your email.');
-        setCurrentMode('verify-otp');
+        // Email ko local storage ya state mein rakhein taaki verify step par use ho sake
+        sessionStorage.setItem('verifyEmail', formData.email);
+        goTo('verify-otp');
         setStep(2);
       } else {
         alert(data.message || 'Registration failed');
@@ -108,18 +114,21 @@ export function AuthCard({ mode = 'login', onNavigate }) {
     e.preventDefault();
     setLoading(true);
 
+    // Session storage ya form data se email lein
+    const targetEmail = formData.email || sessionStorage.getItem('verifyEmail');
+
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, otp })
+        body: JSON.stringify({ email: targetEmail, otp })
       });
       const data = await response.json();
 
       if (data.success) {
         alert('Email verified successfully! Please log in.');
-        // OTP verify hote hi automatically login form khul jayega
-        setCurrentMode('login');
+        sessionStorage.removeItem('verifyEmail');
+        goTo('login');
         setStep(1);
       } else {
         alert(data.message || 'Invalid OTP');
@@ -202,7 +211,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
         ) : isVerifyOtpMode || step === 2 ? (
           <form onSubmit={handleVerifyOtp}>
             <p className="text-sm text-slate-300 mb-4 text-center">
-              Please enter the 6-digit OTP sent to <span className="text-amber-400">{formData.email || 'your email'}</span>
+              Please enter the 6-digit OTP sent to <span className="text-amber-400">{formData.email || sessionStorage.getItem('verifyEmail') || 'your email'}</span>
             </p>
             <div className="relative mb-6">
               <input
@@ -334,7 +343,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
               <input
                 type="text"
                 name="aadhaarNumber"
-                placeholder="Aadhaar / ID Number"
+                placeholder="Government ID / Reference Number"
                 value={formData.aadhaarNumber}
                 onChange={handleChange}
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
