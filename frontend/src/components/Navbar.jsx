@@ -17,6 +17,7 @@ export default function Navbar() {
   const scrollToSection = (e, id) => {
     e.preventDefault();
     setIsOpen(false);
+    setIsProfileOpen(false);
     navigate('/');
     setTimeout(() => {
       const element = document.getElementById(id);
@@ -104,7 +105,7 @@ export default function Navbar() {
               <Phone size={18} /> Call Now
             </a>
 
-            {/* Profile Icon with Dropdown */}
+            {/* Profile Icon with Dropdown (Desktop) */}
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -136,8 +137,12 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-slate-200"
+              onClick={() => {
+                setIsOpen(!isOpen);
+                setIsProfileOpen(false);
+              }}
+              className="text-slate-200 p-2"
+              aria-label="Toggle Menu"
             >
               {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -147,67 +152,59 @@ export default function Navbar() {
 
       {/* Mobile Dropdown Menu */}
       {isOpen && (
-        <div className="md:hidden bg-slate-900 px-4 pt-2 pb-6 space-y-3 border-b border-slate-800">
+        <div className="md:hidden bg-slate-900 px-4 pt-2 pb-6 space-y-3 border-b border-slate-800 shadow-xl">
           <a
             href="#services"
             onClick={(e) => scrollToSection(e, "services")}
-            className="block py-2 text-slate-300 hover:text-amber-500"
+            className="block py-2 text-slate-300 hover:text-amber-500 font-medium"
           >
             Services
           </a>
           <a
             href="#specifications"
             onClick={(e) => scrollToSection(e, "specifications")}
-            className="block py-2 text-slate-300 hover:text-amber-500"
+            className="block py-2 text-slate-300 hover:text-amber-500 font-medium"
           >
             Specifications
           </a>
           <a
             href="#about"
             onClick={(e) => scrollToSection(e, "about")}
-            className="block py-2 text-slate-300 hover:text-amber-500"
+            className="block py-2 text-slate-300 hover:text-amber-500 font-medium"
           >
             About
           </a>
           <a
             href="#contact"
             onClick={(e) => scrollToSection(e, "contact-form")}
-            className="block py-2 text-slate-300 hover:text-amber-500"
+            className="block py-2 text-slate-300 hover:text-amber-500 font-medium"
           >
             Contact
           </a>
-          <a
-            href="tel:+918439860719"
-            className="inline-flex items-center justify-center gap-2 w-full bg-amber-500 text-slate-950 py-3 rounded-lg font-bold"
-          >
-            <Phone size={18} /> Call Now
-          </a>
 
-          {/* Profile Icon with Dropdown (Mobile) */}
-          <div>
+          {/* Direct Login & Register links for Mobile */}
+          <div className="border-t border-slate-800 pt-3 space-y-2">
             <button
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center gap-2 w-full bg-slate-700 text-slate-300 py-3 rounded-lg font-bold hover:bg-slate-600 transition"
+              onClick={() => goTo("/login")}
+              className="flex items-center gap-2 w-full text-left py-2 text-amber-500 font-semibold hover:text-amber-400"
             >
-              <User size={18} /> Account
+              <User size={18} /> Login
             </button>
+            <button
+              onClick={() => goTo("/register")}
+              className="flex items-center gap-2 w-full text-left py-2 text-amber-500 font-semibold hover:text-amber-400"
+            >
+              <User size={18} /> Sign Up
+            </button>
+          </div>
 
-            {isProfileOpen && (
-              <div className="mt-2 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => goTo("/login")}
-                  className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => goTo("/register")}
-                  className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700"
-                >
-                  Sign Up
-                </button>
-              </div>
-            )}
+          <div className="pt-2">
+            <a
+              href="tel:+918439860719"
+              className="inline-flex items-center justify-center gap-2 w-full bg-amber-500 text-slate-950 py-3 rounded-lg font-bold"
+            >
+              <Phone size={18} /> Call Now
+            </a>
           </div>
         </div>
       )}
