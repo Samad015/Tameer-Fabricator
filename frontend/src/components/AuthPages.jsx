@@ -15,21 +15,20 @@ function AuthCard({ mode = 'login', onNavigate }) {
   const [otp, setOtp] = useState('');
   
   // Flow states for Signup (Step 1: Register & Send OTP -> Step 2: Verify OTP)
-  const [step, setStep] = useState(1); 
+  const [step, setStep] = useState(mode === 'verify-otp' ? 2 : 1); 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
 
   const isLogin = mode === 'login'; 
+  const isVerifyOtpMode = mode === 'verify-otp';
  
   const goTo = (next) => { 
     if (onNavigate) onNavigate(next); 
   }; 
-
+ 
   // --- HANDLE LOGIN ---
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -38,13 +37,11 @@ function AuthCard({ mode = 'login', onNavigate }) {
         body: JSON.stringify({ email, password })
       });
       const data = await response.json();
-      console.log('Login Response:', data);
 
       if (data.success) {
         alert('Login Successful!');
-        // Token ko localStorage me save kar sakte hain
         localStorage.setItem('token', data.token);
-        goTo('home'); // ya jo bhi home route ho
+        goTo('home');
       } else {
         alert(data.message || 'Login failed');
       }
@@ -72,7 +69,6 @@ function AuthCard({ mode = 'login', onNavigate }) {
         body: JSON.stringify({ name, email, password, companyName, isCorporate })
       });
       const data = await response.json();
-      console.log('Register Response:', data);
 
       if (data.success) {
         alert('Registration successful! OTP sent to your email.');
@@ -100,7 +96,6 @@ function AuthCard({ mode = 'login', onNavigate }) {
         body: JSON.stringify({ email, otp })
       });
       const data = await response.json();
-      console.log('Verify OTP Response:', data);
 
       if (data.success) {
         alert('Email verified successfully! You can now log in.');
@@ -126,7 +121,7 @@ function AuthCard({ mode = 'login', onNavigate }) {
  
       <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8"> 
         <h2 className="text-3xl font-bold text-white text-center mb-8"> 
-          {isLogin ? 'Login' : step === 1 ? 'Create Account' : 'Verify OTP'} 
+          {isLogin ? 'Login' : (isVerifyOtpMode || step === 2) ? 'Verify OTP' : 'Create Account'} 
         </h2> 
  
         {isLogin ? ( 
@@ -189,149 +184,143 @@ function AuthCard({ mode = 'login', onNavigate }) {
               </button> 
             </p> 
           </form> 
-        ) : ( 
-          // SIGNUP / OTP FLOW
-          <>
-            {step === 1 ? (
-              <form onSubmit={handleRegister}> 
-                {/* Full Name */} 
-                <div className="relative mb-4"> 
-                  <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type="text" 
-                    placeholder="Full Name" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div> 
- 
-                {/* Company Name */} 
-                <div className="relative mb-4"> 
-                  <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type="text" 
-                    placeholder="Business Name (Optional)" 
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div> 
- 
-                {/* Email */} 
-                <div className="relative mb-4"> 
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type="email" 
-                    placeholder="Email Address" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div> 
- 
-                {/* Password */} 
-                <div className="relative mb-4"> 
-                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type={showPassword ? 'text' : 'password'} 
-                    placeholder="Password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
-                  > 
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />} 
-                  </button> 
-                </div> 
- 
-                {/* Confirm Password */} 
-                <div className="relative mb-4"> 
-                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
-                  <input 
-                    type={showConfirm ? 'text' : 'password'} 
-                    placeholder="Confirm Password" 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                  <button 
-                    type="button" 
-                    onClick={() => setShowConfirm(!showConfirm)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
-                  > 
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />} 
-                  </button> 
-                </div> 
- 
-                {/* Corporate checkbox */} 
-                <label className="flex items-center gap-2 mb-6 cursor-pointer"> 
-                  <input 
-                    type="checkbox" 
-                    checked={isCorporate} 
-                    onChange={(e) => setIsCorporate(e.target.checked)} 
-                    className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500" 
-                  /> 
-                  <span className="text-sm text-slate-300"> 
-                    Register as Corporate Client? 
-                  </span> 
-                </label> 
- 
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
-                > 
-                  {loading ? 'Processing...' : 'Register & Send OTP'} 
-                </button> 
- 
-                <p className="text-center text-sm text-slate-400"> 
-                  Already have an account?{' '} 
-                  <button 
-                    type="button"
-                    onClick={() => goTo('login')} 
-                    className="text-amber-500 font-semibold hover:underline" 
-                  > 
-                    Login Now 
-                  </button> 
-                </p> 
-              </form> 
-            ) : (
-              /* STEP 2: OTP VERIFICATION FORM */
-              <form onSubmit={handleVerifyOtp}>
-                <p className="text-sm text-slate-300 mb-4 text-center">
-                  Please enter the 6-digit OTP sent to <span className="text-amber-400">{email}</span>
-                </p>
-                <div className="relative mb-6"> 
-                  <input 
-                    type="text" 
-                    placeholder="Enter 6-digit OTP" 
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    maxLength={6}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-400 text-sm tracking-widest text-center focus:outline-none focus:border-amber-500 transition" 
-                  /> 
-                </div>
+        ) : isVerifyOtpMode || step === 2 ? ( 
+          <form onSubmit={handleVerifyOtp}>
+            <p className="text-sm text-slate-300 mb-4 text-center">
+              Please enter the 6-digit OTP sent to <span className="text-amber-400">{email || 'your email'}</span>
+            </p>
+            <div className="relative mb-6"> 
+              <input 
+                type="text" 
+                placeholder="Enter 6-digit OTP" 
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                maxLength={6}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-400 text-sm tracking-widest text-center focus:outline-none focus:border-amber-500 transition" 
+              /> 
+            </div>
 
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
-                > 
-                  {loading ? 'Verifying...' : 'Verify OTP'} 
-                </button>
-              </form>
-            )}
-          </>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
+            > 
+              {loading ? 'Verifying...' : 'Verify OTP'} 
+            </button>
+          </form>
+        ) : ( 
+          <form onSubmit={handleRegister}> 
+            {/* Full Name */} 
+            <div className="relative mb-4"> 
+              <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
+              /> 
+            </div> 
+ 
+            {/* Business Name */} 
+            <div className="relative mb-4"> 
+              <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
+              <input 
+                type="text" 
+                placeholder="Business Name (Optional)" 
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
+              /> 
+            </div> 
+ 
+            {/* Email */} 
+            <div className="relative mb-4"> 
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
+              /> 
+            </div> 
+ 
+            {/* Password */} 
+            <div className="relative mb-4"> 
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="Password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
+              /> 
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
+              > 
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />} 
+              </button> 
+            </div> 
+ 
+            {/* Confirm Password */} 
+            <div className="relative mb-4"> 
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" /> 
+              <input 
+                type={showConfirm ? 'text' : 'password'} 
+                placeholder="Confirm Password" 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition" 
+              /> 
+              <button 
+                type="button" 
+                onClick={() => setShowConfirm(!showConfirm)} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" 
+              > 
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />} 
+              </button> 
+            </div> 
+ 
+            {/* Corporate checkbox */} 
+            <label className="flex items-center gap-2 mb-6 cursor-pointer"> 
+              <input 
+                type="checkbox" 
+                checked={isCorporate} 
+                onChange={(e) => setIsCorporate(e.target.checked)} 
+                className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500" 
+              /> 
+              <span className="text-sm text-slate-300"> 
+                Register as Corporate Client? 
+              </span> 
+            </label> 
+ 
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6" 
+            > 
+              {loading ? 'Processing...' : 'Register & Send OTP'} 
+            </button> 
+ 
+            <p className="text-center text-sm text-slate-400"> 
+              Already have an account?{' '} 
+              <button 
+                type="button"
+                onClick={() => goTo('login')} 
+                className="text-amber-500 font-semibold hover:underline" 
+              > 
+                Login Now 
+              </button> 
+            </p> 
+          </form> 
         )} 
       </div> 
     </div> 
@@ -345,5 +334,9 @@ export function LoginPage({ onNavigate }) {
 export function SignupPage({ onNavigate }) { 
   return <AuthCard mode="signup" onNavigate={onNavigate} />; 
 } 
+
+export function VerifyOtp({ onNavigate }) { 
+  return <AuthCard mode="verify-otp" onNavigate={onNavigate} />; 
+}
  
 export default AuthCard;

@@ -6,10 +6,10 @@ export default function Navbar({ onNavigate }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
-  const goTo = (page) => {
+  const goTo = (path) => {
     setIsOpen(false);
     setIsProfileOpen(false);
-    if (onNavigate) onNavigate(page);
+    if (onNavigate) onNavigate(path);
   };
 
   const scrollToSection = (e, id) => {
