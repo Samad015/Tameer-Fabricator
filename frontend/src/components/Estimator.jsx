@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, Settings, Hand, FileText, Blinds, Cog, Building } from 'lucide-react';
+import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, Settings, Hand, FileText, Blinds, Cog, Building, Ruler, ChevronDown } from 'lucide-react';
 
 export default function Estimator() {
   // Configured Rates
   const PRICE_PER_KG = 95; // Rate per kg (in Rupees)
+  const INCHES_TO_FEET = 1 / 12; // Conversion factor: 1 inch = 1/12 feet
 
   // State Management
   const [shutterType, setShutterType] = useState('manual'); // 'manual' or 'gear'
@@ -11,13 +12,23 @@ export default function Estimator() {
   const [height, setHeight] = useState('');
   const [result, setResult] = useState(null);
 
+  // Unit Selection State (Feet / Inches)
+  const [unit, setUnit] = useState('feet'); // 'feet' or 'inches'
+  const [showUnitPopup, setShowUnitPopup] = useState(false);
+
   // Dynamic Density Based on Selected Shutter Type
   const weightPerSqFt = shutterType === 'manual' ? 2.2 : 2.6;
 
   const handleCalculate = (e) => {
     e.preventDefault();
-    const w = parseFloat(width) || 0;
-    const h = parseFloat(height) || 0;
+    let w = parseFloat(width) || 0;
+    let h = parseFloat(height) || 0;
+
+    // Convert entered dimensions to feet if unit selected is inches
+    if (unit === 'inches') {
+      w = w * INCHES_TO_FEET;
+      h = h * INCHES_TO_FEET;
+    }
 
     const area = w * h;
     const weight = area * weightPerSqFt;
@@ -110,6 +121,55 @@ export default function Estimator() {
                   <Building size={16} /> Motorized 
                 </button>
               </div>
+            </div>
+
+            {/* Unit Selector Popup (Feet / Inches) - NEW FEATURE */}
+            <div className="relative">
+              <label className="block text-xs font-bold text-slate-300 mb-2 uppercase">
+                Select Unit *
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowUnitPopup(!showUnitPopup)}
+                className="w-full flex items-center justify-between gap-2 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-bold hover:border-amber-500 transition cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Ruler size={16} className="text-amber-500" />
+                  {unit === 'feet' ? 'Feet (ft)' : 'Inches (in)'}
+                </span>
+                <ChevronDown size={16} className={`text-slate-400 transition-transform ${showUnitPopup ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showUnitPopup && (
+                <div className="absolute z-20 mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnit('feet');
+                      setShowUnitPopup(false);
+                      setResult(null);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 text-sm font-bold transition cursor-pointer ${
+                      unit === 'feet' ? 'bg-amber-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    Feet (ft)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnit('inches');
+                      setShowUnitPopup(false);
+                      setResult(null);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 text-sm font-bold transition cursor-pointer ${
+                      unit === 'inches' ? 'bg-amber-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    Inches (in)
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Customer Editable Inputs */}

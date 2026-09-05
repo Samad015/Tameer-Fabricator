@@ -24,10 +24,6 @@ export default function Footer() {
               <a href="https://www.instagram.com/tameerfabricators?igsi=MWE5ZDlrN2R2YWJ4OQ==" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">Instagram</a>
             </li>
 
-            <li className="flex items-center gap-2">
-              <TvMinimalPlay size={18} className="text-amber-500" />
-              <a href="https://youtube.com/@tameerfabricators?si=cw6a_s71E4WpwEqn" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">YouTube</a>
-            </li>
             
           </ul>
         </div>
@@ -39,6 +35,12 @@ export default function Footer() {
               <ExternalLink size={18} className="text-amber-500" /> 
               <a href="https://www.indiamart.com/tameer-fabricators-bareilly/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">IndiaMART Profile</a>
             </li>
+
+             <li className="flex items-center gap-2">
+              <TvMinimalPlay size={18} className="text-amber-500" />
+              <a href="https://youtube.com/@tameerfabricators?si=cw6a_s71E4WpwEqn" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">YouTube</a>
+            </li>
+            
           </ul>
         </div>
       </div>

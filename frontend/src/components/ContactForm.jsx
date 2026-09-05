@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Send, CheckCircle2, AlertCircle, Loader2, Ruler } from "lucide-react";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -7,6 +7,7 @@ export default function ContactForm() {
     phone: "",
     width: "",
     height: "",
+    unit: "Feet",
     shutterType: "",
     message: "",
   });
@@ -14,6 +15,7 @@ export default function ContactForm() {
   const [status, setStatus] = useState({ type: null, message: "" });
   const [loading, setLoading] = useState(false);
   const [showShutterPopup, setShowShutterPopup] = useState(false);
+  const [showUnitPopup, setShowUnitPopup] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -28,6 +30,14 @@ export default function ContactForm() {
       shutterType: type,
     });
     setShowShutterPopup(false);
+  };
+
+  const handleUnitSelect = (unitValue) => {
+    setFormData({
+      ...formData,
+      unit: unitValue,
+    });
+    setShowUnitPopup(false);
   };
 
   const handleSubmit = async (e) => {
@@ -62,6 +72,7 @@ export default function ContactForm() {
           phone: "",
           width: "",
           height: "",
+          unit: "Feet",
           shutterType: "",
           message: "",
         });
@@ -164,6 +175,21 @@ export default function ContactForm() {
         </div>
       </div>
 
+      {/* Unit Selection (Feet / Inches) - NEW FIELD ADDED FOR EMAIL DATA */}
+      <div>
+        <label className="block text-xs font-semibold mb-1 text-slate-200">
+          Unit
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowUnitPopup(true)}
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-left text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer flex items-center gap-2"
+        >
+          <Ruler size={14} className="text-amber-500" />
+          {formData.unit}
+        </button>
+      </div>
+
       <div>
         <label className="block text-xs font-semibold mb-1 text-slate-200">
           Shutter Type
@@ -238,6 +264,46 @@ export default function ContactForm() {
             <button
               type="button"
               onClick={() => setShowShutterPopup(false)}
+              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-700 text-slate-300 hover:border-amber-500 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Unit Selection Popup - NEW POPUP ADDED */}
+      {showUnitPopup && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowUnitPopup(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-xl p-4 w-full max-w-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-white mb-3">
+              Select Unit
+            </h3>
+            <div className="space-y-2">
+              {["Feet", "Inches"].map((unitOption) => (
+                <button
+                  key={unitOption}
+                  type="button"
+                  onClick={() => handleUnitSelect(unitOption)}
+                  className={`w-full text-left p-2 text-sm rounded-lg border transition cursor-pointer ${
+                    formData.unit === unitOption
+                      ? "bg-amber-500 border-amber-500 text-slate-950 font-bold"
+                      : "bg-slate-800 border-slate-700 text-white hover:border-amber-500"
+                  }`}
+                >
+                  {unitOption}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowUnitPopup(false)}
               className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-700 text-slate-300 hover:border-amber-500 transition cursor-pointer"
             >
               Cancel

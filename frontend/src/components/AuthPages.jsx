@@ -46,16 +46,39 @@ export function AuthCard({ mode = 'login', onNavigate }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // ============================
+  // UPDATED LOGIN HANDLER
+  // Email OR Mobile Number Login
+  // ============================
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      const loginValue = formData.email.trim();
+
+      // Remove spaces and hyphens from mobile number
+      const phoneNumber = loginValue.replace(/[\s-]/g, '');
+
+      // Check whether entered value is a phone number
+      const isPhone = /^[+]?[0-9]{10,13}$/.test(phoneNumber);
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, password: formData.password })
+        body: JSON.stringify(
+          isPhone
+            ? {
+                phone: phoneNumber,
+                password: formData.password
+              }
+            : {
+                email: loginValue,
+                password: formData.password
+              }
+        )
       });
+
       const data = await response.json();
 
       if (data.success) {
@@ -79,6 +102,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
       alert('Passwords do not match!');
       return;
     }
+
     setLoading(true);
 
     try {
@@ -91,6 +115,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
           isCorporate
         })
       });
+
       const data = await response.json();
 
       if (data.success) {
@@ -123,6 +148,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail, otp })
       });
+
       const data = await response.json();
 
       if (data.success) {
@@ -153,9 +179,9 @@ export function AuthCard({ mode = 'login', onNavigate }) {
             <div className="relative mb-4">
               <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
               <input
-                type="email"
+                type="text"
                 name="email"
-                placeholder="Email Address"
+                placeholder="Mobile number or email address"
                 value={formData.email}
                 onChange={handleChange}
                 required
@@ -213,6 +239,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
             <p className="text-sm text-slate-300 mb-4 text-center">
               Please enter the 6-digit OTP sent to <span className="text-amber-400">{formData.email || sessionStorage.getItem('verifyEmail') || 'your email'}</span>
             </p>
+
             <div className="relative mb-6">
               <input
                 type="text"
@@ -321,6 +348,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 onChange={handleChange}
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
               />
+
               <input
                 type="text"
                 name="pan"
@@ -329,6 +357,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 onChange={handleChange}
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
               />
+
               <input
                 type="text"
                 name="udyamNumber"
@@ -348,41 +377,6 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 onChange={handleChange}
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
               />
-              <input
-                type="text"
-                name="bankName"
-                placeholder="Bank Name"
-                value={formData.bankName}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                name="accountNumber"
-                placeholder="Account Number"
-                value={formData.accountNumber}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="ifsc"
-                placeholder="IFSC Code"
-                value={formData.ifsc}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="accountHolderName"
-                placeholder="Account Holder Name"
-                value={formData.accountHolderName}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -397,7 +391,12 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   required
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -413,7 +412,12 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   required
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
                 />
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
                   {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -426,7 +430,10 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 onChange={(e) => setIsCorporate(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500"
               />
-              <span className="text-sm text-slate-300">Register as Corporate Client?</span>
+
+              <span className="text-sm text-slate-300">
+                Register as Corporate Client?
+              </span>
             </label>
 
             <button
