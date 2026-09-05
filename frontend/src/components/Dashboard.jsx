@@ -15,7 +15,7 @@ export default function Dashboard({ onNavigate }) {
           return;
         }
 
-        const response = await fetch('http://localhost:5001/api/auth/get-profile', {
+        const response = await fetch('/api/auth/get-profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
