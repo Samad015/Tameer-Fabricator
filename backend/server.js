@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 // Import Database connection and Auth Routes
@@ -105,17 +106,29 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Serve Static Files (Frontend Build) - Vercel & Production Safe
+// Serve Static Files (Frontend Build) - Robust Production Safe Handling
 if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../frontend/dist');
-  
+  const possiblePaths = [
+    path.join(__dirname, '../frontend/dist'),
+    path.join(process.cwd(), 'frontend/dist'),
+    path.join(__dirname, 'frontend/dist')
+  ];
+
+  const frontendPath = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[0];
+  console.log("Serving frontend from:", frontendPath);
+
   app.use(express.static(frontendPath));
   
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    const indexPath = path.join(frontendPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Frontend build not found.');
+    }
   });
 }
 
