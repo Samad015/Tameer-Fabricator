@@ -62,7 +62,39 @@ exports.register = async (req, res) => {
     });
 
     await newUser.save();
-    console.log(`OTP for ${email}: ${otp}`);
+
+    // Send OTP via Brevo API
+    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
+      const emailData = {
+        sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
+        to: [{ email: email, name: name }],
+        subject: "Your OTP for Tameer Fabricators Registration",
+        htmlContent: `
+          <h2>Welcome to Tameer Fabricators!</h2>
+          <p>Hello ${name},</p>
+          <p>Your OTP for account verification is:</p>
+          <h1 style="color: #2563eb;">${otp}</h1>
+          <p>This OTP is valid for 10 minutes.</p>
+        `,
+      };
+
+      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      const brevoData = await brevoRes.json();
+      if (!brevoRes.ok) {
+        console.error('Brevo Email Error:', brevoData);
+      }
+    } else {
+      console.warn('Brevo API key or EMAIL_USER missing in environment variables.');
+    }
 
     return res.status(200).json({ 
       success: true, 
