@@ -106,10 +106,6 @@ export function AuthCard({ mode = 'login', onNavigate }) {
       alert('Passwords do not match!');
       return;
     }
-    if (formData.accountNumber !== formData.confirmAccountNumber) {
-      alert('Bank Account numbers do not match!');
-      return;
-    }
     setLoading(true);
 
     try {
@@ -393,10 +389,9 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 <input
                   type="text"
                   name="pricingDetails"
-                  placeholder="Pricing Highlight * (e.g. Rolling Shutters @ ₹250/sq ft)"
+                  placeholder="Pricing Highlight (e.g. Rolling Shutters @ ₹250/sq ft)"
                   value={formData.pricingDetails}
                   onChange={handleChange}
-                  required
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
                 <input
@@ -405,7 +400,6 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   placeholder="Services (e.g. Installation, Motor Repair, Sheds)"
                   value={formData.servicesOffered}
                   onChange={handleChange}
-                  required
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
@@ -428,10 +422,9 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 <input
                   type="text"
                   name="pan"
-                  placeholder="PAN Card Number *"
+                  placeholder="PAN Card Number"
                   value={formData.pan}
                   onChange={handleChange}
-                  required
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 uppercase"
                 />
                 <input
