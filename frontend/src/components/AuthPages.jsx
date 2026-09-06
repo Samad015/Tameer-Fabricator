@@ -446,7 +446,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
             </div>
 
             {/* SECTION 6: Bank Account Details for Payouts */}
-            <div>
+            {/* <div>
               <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
                 <Landmark size={16} /> 6. Bank Account Details (For Customer Leads & Payouts)
               </h3>
@@ -501,7 +501,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* SECTION 7: Passwords & Security */}
             <div>
