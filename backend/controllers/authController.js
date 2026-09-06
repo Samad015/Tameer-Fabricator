@@ -6,83 +6,104 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
   try {
     const {
-      name, companyName, address, phone, email, password,
-      isCorporate, gstin, pan, udyamNumber, aadhaarNumber,
-      accountNumber, ifsc, accountHolderName, bankName
+      name, email, password, phone, altPhone,
+      companyName, businessType, category, experienceYears,
+      address, landmark, area, city, state, pincode,
+      pricingDetails, servicesOffered,
+      gstin, pan, udyamNumber,
+      bankName, accountNumber, ifsc, accountHolderName,
+      isCorporate, role
     } = req.body;
 
-    let user = await User.findOne({ email });
-    if (user && user.isVerified) {
-      return res.status(400).json({ success: false, message: 'User already exists with this email.' });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'Email is already registered.' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
+    // Hash password securely
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    if (user && !user.isVerified) {
-      user.name = name;
-      user.companyName = companyName;
-      user.address = address;
-      user.phone = phone;
-      user.password = hashedPassword;
-      user.isCorporate = isCorporate;
-      user.gstin = gstin;
-      user.pan = pan;
-      user.udyamNumber = udyamNumber;
-      user.aadhaarNumber = aadhaarNumber;
-      user.accountNumber = accountNumber;
-      user.ifsc = ifsc;
-      user.accountHolderName = accountHolderName;
-      user.bankName = bankName;
-      user.otp = otp;
-      user.otpExpires = otpExpires;
-    } else {
-      user = new User({
-        name, companyName, address, phone, email,
-        password: hashedPassword, isCorporate, gstin,
-        pan, udyamNumber, aadhaarNumber, accountNumber,
-        ifsc, accountHolderName, bankName, otp, otpExpires
-      });
-    }
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
-    await user.save();
-
-    const emailData = {
-      sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
-      to: [{ email: email, name: name }],
-      subject: "Verify Your Account - OTP Code",
-      htmlContent: `
-        <h2>Welcome to Tameer Fabricator's Portal</h2>
-        <p>Hello <strong>${name}</strong>,</p>
-        <p>Your OTP for registration is:</p>
-        <h1 style="color: #d97706; letter-spacing: 3px;">${otp}</h1>
-        <p>This OTP is valid for 10 minutes.</p>
-      `
-    };
-
-    const emailResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': process.env.BREVO_API_KEY,
-      },
-      body: JSON.stringify(emailData),
+    // Create new user with all fields from req.body
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      altPhone,
+      companyName: companyName || req.body.businessName,
+      businessType,
+      category,
+      experienceYears,
+      address,
+      landmark,
+      area,
+      city,
+      state: state || 'Uttar Pradesh',
+      pincode,
+      pricingDetails,
+      servicesOffered,
+      gstin,
+      pan,
+      udyamNumber,
+      bankName,
+      accountNumber,
+      ifsc,
+      accountHolderName,
+      role: role || 'dealer',
+      isCorporate: isCorporate || false,
+      otp,
+      otpExpires
     });
 
-    if (!emailResponse.ok) {
-      const errData = await emailResponse.json();
-      throw new Error(errData.message || 'Failed to send OTP email via Brevo');
+    await newUser.save();
+
+    // Send OTP via Brevo API
+    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
+      const emailData = {
+        sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
+        to: [{ email: email, name: name }],
+        subject: "Your OTP for Tameer Fabricators Registration",
+        htmlContent: `
+          <h2>Welcome to Tameer Fabricators!</h2>
+          <p>Hello ${name},</p>
+          <p>Your OTP for account verification is:</p>
+          <h1 style="color: #2563eb;">${otp}</h1>
+          <p>This OTP is valid for 10 minutes.</p>
+        `,
+      };
+
+      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      const brevoData = await brevoRes.json();
+      if (!brevoRes.ok) {
+        console.error('Brevo Email Error:', brevoData);
+      }
+    } else {
+      console.warn('Brevo API key or EMAIL_USER missing in environment variables.');
     }
 
-    res.status(200).json({ success: true, message: 'Registration successful. OTP sent to email.' });
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Registration successful! OTP sent to your email.' 
+    });
 
   } catch (error) {
-    console.error('Register Error:', error.message);
-    res.status(500).json({ success: false, message: error.message || 'Server error during registration' });
+    console.error('Registration Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error during registration' });
   }
 };
 
