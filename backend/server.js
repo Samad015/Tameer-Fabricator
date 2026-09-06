@@ -40,8 +40,7 @@ app.get('/api/dealers/search', async (req, res) => {
     const dealers = await User.find({
       pincode: pincode.trim(),
       role: 'dealer',
-      isVerified: true,
-      isSubscriptionActive: true
+      isVerified: true
     }).select('companyName name phone address area city pricingDetails gstin');
 
     return res.status(200).json({
@@ -52,6 +51,21 @@ app.get('/api/dealers/search', async (req, res) => {
   } catch (error) {
     console.error('Dealer Search Error:', error);
     return res.status(500).json({ success: false, message: 'Server error while searching dealers.' });
+  }
+});
+
+// SINGLE DEALER PROFILE API
+app.get('/api/dealers/:id', async (req, res) => {
+  try {
+    const dealer = await User.findById(req.params.id).select('-password');
+    if (!dealer) {
+      return res.status(404).json({ success: false, message: 'Dealer not found.' });
+    }
+
+    return res.status(200).json({ success: true, dealer });
+  } catch (error) {
+    console.error('Single Dealer Fetch Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error fetching dealer profile.' });
   }
 });
 

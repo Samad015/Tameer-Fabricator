@@ -9,7 +9,7 @@ import Specifications from './components/Specifications';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import { LoginPage, SignupPage, VerifyOtp } from './components/AuthPages';
-import Dashboard from './components/Dashboard'; // <-- Dashboard component import kiya
+import Dashboard from './components/DetailsDashboard'; // <-- Dashboard component import kiya
 import DealerProfile from './components/DealerProfile'; // <-- Dealer page import kiya
 
 export default function App() {

@@ -46,14 +46,14 @@ export default function DealerDashboard() {
     <div className="min-h-screen bg-slate-950 text-white py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header & Search Bar */}
+        {/* Header & Search Bar for Customers */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <MapPin className="text-amber-500" /> Local Fabricator & Dealer Dashboard
+              <MapPin className="text-amber-500" /> Find Local Rolling Shutter & Metal Fabricators
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Showing verified rolling shutter & metal fabrication experts near pincode: <span className="text-amber-400 font-mono font-bold">{pincode || "Not Set"}</span>
+              Showing verified experts available for your service near pincode: <span className="text-amber-400 font-mono font-bold">{pincode || "Not Set"}</span>
             </p>
           </div>
 
@@ -62,7 +62,7 @@ export default function DealerDashboard() {
               type="text"
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
-              placeholder="Change Pincode..."
+              placeholder="Enter Pincode..."
               maxLength="6"
               className="bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm font-mono"
             />
@@ -74,7 +74,7 @@ export default function DealerDashboard() {
 
         {/* Results Section */}
         {loading ? (
-          <div className="text-center py-20 text-slate-400">Loading nearby dealers...</div>
+          <div className="text-center py-20 text-slate-400">Searching available fabricators in your area...</div>
         ) : dealers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {dealers.map((dealer) => (
@@ -89,7 +89,7 @@ export default function DealerDashboard() {
                   <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
                     <Building2 size={20} className="text-amber-500" /> {dealer.companyName}
                   </h3>
-                  <p className="text-xs text-slate-400 mb-4">Owner: <span className="text-slate-200">{dealer.name}</span></p>
+                  <p className="text-xs text-slate-400 mb-4">Expert / Owner: <span className="text-slate-200">{dealer.name}</span></p>
 
                   <div className="space-y-2 text-sm text-slate-300 mb-6 bg-slate-950/50 p-4 rounded-xl border border-slate-800/60">
                     <p className="flex items-start gap-2">
@@ -115,7 +115,7 @@ export default function DealerDashboard() {
                     href={`tel:${dealer.phone}`}
                     className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md text-sm"
                   >
-                    <Phone size={16} /> Call: {dealer.phone}
+                    <Phone size={16} /> Call Expert: {dealer.phone}
                   </a>
                 </div>
               </div>
@@ -124,9 +124,9 @@ export default function DealerDashboard() {
         ) : (
           <div className="text-center py-20 bg-slate-900 border border-slate-800 rounded-2xl p-8">
             <ShieldAlert size={48} className="mx-auto text-amber-500 mb-4" />
-            <h3 className="text-lg font-bold text-white mb-2">No Dealers Found in this Pincode</h3>
+            <h3 className="text-lg font-bold text-white mb-2">No Fabricators Found in this Pincode</h3>
             <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Currently there are no active subscribed dealers registered for pincode <strong>{pincode}</strong>. Try searching a nearby pincode.
+              Currently there are no active registered fabricators for pincode <strong>{pincode}</strong>. Try searching a nearby pincode or call our direct helpline for assistance.
             </p>
           </div>
         )}

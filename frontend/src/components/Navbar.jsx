@@ -37,7 +37,8 @@ export default function Navbar() {
     if (!pincodeInput.trim()) return;
     localStorage.setItem("userPincode", pincodeInput.trim());
     setIsLocationModalOpen(false);
-    navigate(`/dealers?pincode=${pincodeInput.trim()}`);
+    // Updated route to match Dashboard component route (/dashboard)
+    navigate(`/dashboard?pincode=${pincodeInput.trim()}`);
   };
 
   useEffect(() => {
