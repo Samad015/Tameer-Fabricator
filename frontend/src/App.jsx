@@ -10,6 +10,7 @@ import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import { LoginPage, SignupPage, VerifyOtp } from './components/AuthPages';
 import Dashboard from './components/Dashboard'; // <-- Dashboard component import kiya
+import DealerProfile from './components/DealerProfile'; // <-- Dealer page import kiya
 
 export default function App() {
   return (
@@ -37,6 +38,9 @@ export default function App() {
 
         {/* Dashboard Route */}
         <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Dealer Profile Route */}
+        <Route path="/dealer/:dealerId" element={<DealerProfile />} />
       </Routes>
 
       {/* Footer */}
