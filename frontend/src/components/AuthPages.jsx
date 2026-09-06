@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Building2, MapPin, Phone, Eye, EyeOff } from 'lucide-react';
+import { 
+  Mail, Lock, User, Building2, MapPin, Phone, 
+  FileText, CreditCard, ShieldCheck, Eye, EyeOff, Briefcase, Landmark 
+} from 'lucide-react';
 
 export function AuthCard({ mode = 'login', onNavigate }) {
   const navigate = useNavigate();
@@ -13,22 +16,46 @@ export function AuthCard({ mode = 'login', onNavigate }) {
   const [step, setStep] = useState(mode === 'verify-otp' ? 2 : 1);
   const [otp, setOtp] = useState('');
 
+  // Comprehensive state covering business, location, legal compliance, and payout details
   const [formData, setFormData] = useState({
+    // Personal & Auth Info
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    businessName: '',
-    address: '',
     phone: '',
+    altPhone: '',
+
+    // Business Profile
+    businessName: '',
+    businessType: 'Proprietorship', // Proprietorship, Partnership, Private Limited, etc.
+    category: 'Rolling Shutters & Gates', // Core manufacturing/fabrication domain
+    experienceYears: '',
+
+    // Location Details (Crucial for Local Dealer Dashboard Mapping)
+    address: '',
+    landmark: '',
+    area: '',           // e.g., Civil Lines
+    city: '',           // e.g., Bareilly
+    state: 'Uttar Pradesh',
+    pincode: '',        // e.g., 243001
+
+    // Pricing & Offerings Info
+    pricingDetails: '', // e.g., Motorized Rolling Shutters @ ₹280/sq ft onwards
+    servicesOffered: '', // e.g., Installation, Repair, Custom Fabrication
+
+    // Legal & Tax Compliance
     gstin: '',
     pan: '',
     udyamNumber: '',
-    aadhaarNumber: '', // Redacted/Placeholder friendly ID input
+    aadhaarOrIdRef: '',
+
+    // Bank Account Details for Payouts / Financials
+    bankName: '',
     accountNumber: '',
+    confirmAccountNumber: '',
     ifsc: '',
-    accountHolderName: '',
-    bankName: ''
+    accountHolderName: ''
   });
 
   const isLogin = currentMode === 'login';
@@ -61,7 +88,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
       if (data.success) {
         alert('Login Successful!');
         localStorage.setItem('token', data.token);
-        navigate('/dashboard'); // Successful login par dashboard par redirect karein
+        navigate('/dashboard');
       } else {
         alert(data.message || 'Login failed');
       }
@@ -79,6 +106,10 @@ export function AuthCard({ mode = 'login', onNavigate }) {
       alert('Passwords do not match!');
       return;
     }
+    if (formData.accountNumber !== formData.confirmAccountNumber) {
+      alert('Bank Account numbers do not match!');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -88,6 +119,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
         body: JSON.stringify({
           ...formData,
           companyName: formData.businessName,
+          role: 'dealer',
           isCorporate
         })
       });
@@ -95,7 +127,6 @@ export function AuthCard({ mode = 'login', onNavigate }) {
 
       if (data.success) {
         alert('Registration successful! OTP sent to your email.');
-        // Email ko local storage ya state mein rakhein taaki verify step par use ho sake
         sessionStorage.setItem('verifyEmail', formData.email);
         goTo('verify-otp');
         setStep(2);
@@ -113,8 +144,6 @@ export function AuthCard({ mode = 'login', onNavigate }) {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Session storage ya form data se email lein
     const targetEmail = formData.email || sessionStorage.getItem('verifyEmail');
 
     try {
@@ -142,11 +171,14 @@ export function AuthCard({ mode = 'login', onNavigate }) {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className={`relative w-full ${isLogin || isVerifyOtpMode || step === 2 ? 'max-w-md' : 'max-w-2xl'} bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8`}>
-        <h2 className="text-3xl font-bold text-white text-center mb-8">
-          {isLogin ? 'Login' : (isVerifyOtpMode || step === 2) ? 'Verify OTP' : 'Create Account'}
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden py-10">
+      <div className={`relative w-full ${isLogin || isVerifyOtpMode || step === 2 ? 'max-w-md' : 'max-w-4xl'} bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8`}>
+        <h2 className="text-3xl font-bold text-white text-center mb-2">
+          {isLogin ? 'Dealer Login' : (isVerifyOtpMode || step === 2) ? 'Verify OTP' : 'Complete Dealer Onboarding'}
         </h2>
+        <p className="text-center text-slate-400 text-sm mb-8">
+          {!isLogin && !isVerifyOtpMode && step !== 2 && 'Register your workshop or business to receive local customer requests instantly.'}
+        </p>
 
         {isLogin ? (
           <form onSubmit={handleLogin}>
@@ -159,7 +191,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -172,46 +204,26 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-              >
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
 
-            <div className="text-right mb-6">
-              <a href="#" className="text-sm text-slate-400 hover:text-amber-500 transition">
-                Forgot Password?
-              </a>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6"
-            >
+            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase transition mt-4 mb-6">
               {loading ? 'Logging in...' : 'Log In'}
             </button>
 
             <p className="text-center text-sm text-slate-400">
               Don't have an account?{' '}
-              <button
-                type="button"
-                onClick={() => goTo('signup')}
-                className="text-amber-500 font-semibold hover:underline"
-              >
-                Register Now
-              </button>
+              <button type="button" onClick={() => goTo('signup')} className="text-amber-500 font-semibold hover:underline">Register Now</button>
             </p>
           </form>
         ) : isVerifyOtpMode || step === 2 ? (
           <form onSubmit={handleVerifyOtp}>
             <p className="text-sm text-slate-300 mb-4 text-center">
-              Please enter the 6-digit OTP sent to <span className="text-amber-400">{formData.email || sessionStorage.getItem('verifyEmail') || 'your email'}</span>
+              Please enter the 6-digit OTP sent to <span className="text-amber-400">{formData.email || sessionStorage.getItem('verifyEmail')}</span>
             </p>
             <div className="relative mb-6">
               <input
@@ -221,33 +233,22 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 onChange={(e) => setOtp(e.target.value)}
                 maxLength={6}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-400 text-sm tracking-widest text-center focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white text-center text-lg tracking-widest focus:outline-none focus:border-amber-500"
               />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mb-6"
-            >
+            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase transition mb-6">
               {loading ? 'Verifying...' : 'Verify OTP'}
             </button>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => goTo('login')}
-                className="text-sm text-slate-400 hover:text-amber-500 transition"
-              >
-                Back to Login
-              </button>
-            </div>
           </form>
         ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+          <form onSubmit={handleRegister} className="space-y-6">
+            
+            {/* SECTION 1: Personal & Account Identification */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <User size={16} /> 1. Personal & Contact Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input
                   type="text"
                   name="name"
@@ -255,12 +256,8 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
-              </div>
-
-              <div className="relative">
-                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
                 <input
                   type="email"
                   name="email"
@@ -268,154 +265,281 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
-              </div>
-
-              <div className="relative">
-                <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
                 <input
                   type="text"
                   name="phone"
-                  placeholder="Phone Number *"
+                  placeholder="Primary Mobile Number *"
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
+            </div>
 
-              <div className="relative">
-                <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+            {/* SECTION 2: Business & Enterprise Details */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Building2 size={16} /> 2. Business & Enterprise Profile
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input
                   type="text"
                   name="businessName"
-                  placeholder="Business Name *"
+                  placeholder="Business / Workshop Name *"
                   value={formData.businessName}
                   onChange={handleChange}
                   required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+                <select
+                  name="businessType"
+                  value={formData.businessType}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                >
+                  <option value="Proprietorship">Proprietorship</option>
+                  <option value="Partnership">Partnership</option>
+                  <option value="Private Limited">Private Limited</option>
+                  <option value="Individual Fabricator">Individual Fabricator</option>
+                </select>
+                <input
+                  type="text"
+                  name="experienceYears"
+                  placeholder="Years in Business (e.g. 5 Years)"
+                  value={formData.experienceYears}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
 
-            <div className="relative">
-              <MapPin size={18} className="absolute left-4 top-4 text-amber-500" />
-              <textarea
-                name="address"
-                placeholder="Full Address *"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                rows={2}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
+            {/* SECTION 3: Precise Location for Customer Mapping */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <MapPin size={16} /> 3. Workshop Location & Service Area Mapping
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <textarea
+                    name="address"
+                    placeholder="Complete Shop / Workshop Address *"
+                    value={formData.address}
+                    onChange={handleChange}
+                    required
+                    rows={2}
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <input
+                    type="text"
+                    name="landmark"
+                    placeholder="Nearby Landmark (e.g. Near Petrol Pump)"
+                    value={formData.landmark}
+                    onChange={handleChange}
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                name="gstin"
-                placeholder="GSTIN (Optional)"
-                value={formData.gstin}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="pan"
-                placeholder="PAN Number"
-                value={formData.pan}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="udyamNumber"
-                placeholder="Udyam Number"
-                value={formData.udyamNumber}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                name="aadhaarNumber"
-                placeholder="Government ID / Reference Number"
-                value={formData.aadhaarNumber}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="bankName"
-                placeholder="Bank Name"
-                value={formData.bankName}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                name="accountNumber"
-                placeholder="Account Number"
-                value={formData.accountNumber}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="ifsc"
-                placeholder="IFSC Code"
-                value={formData.ifsc}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                name="accountHolderName"
-                placeholder="Account Holder Name"
-                value={formData.accountHolderName}
-                onChange={handleChange}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Password *"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <input
+                    type="text"
+                    name="area"
+                    placeholder="Area / Locality * (e.g. Civil Lines)"
+                    value={formData.area}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <input
+                    type="text"
+                    name="city"
+                    placeholder="City * (e.g. Bareilly)"
+                    value={formData.city}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <input
+                    type="text"
+                    name="state"
+                    placeholder="State *"
+                    value={formData.state}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <input
+                    type="text"
+                    name="pincode"
+                    placeholder="Pincode * (e.g. 243001)"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    maxLength="6"
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-amber-500"
+                  />
+                </div>
               </div>
+            </div>
 
-              <div className="relative">
-                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+            {/* SECTION 4: Pricing & Services for Customer Dashboard */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Briefcase size={16} /> 4. Pricing & Services Catalog
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
-                  type={showConfirm ? 'text' : 'password'}
-                  name="confirmPassword"
-                  placeholder="Confirm Password *"
-                  value={formData.confirmPassword}
+                  type="text"
+                  name="pricingDetails"
+                  placeholder="Pricing Highlight * (e.g. Rolling Shutters @ ₹250/sq ft)"
+                  value={formData.pricingDetails}
                   onChange={handleChange}
                   required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <input
+                  type="text"
+                  name="servicesOffered"
+                  placeholder="Services (e.g. Installation, Motor Repair, Sheds)"
+                  value={formData.servicesOffered}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* SECTION 5: Legal & Tax Compliance */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <FileText size={16} /> 5. Legal, Tax & ID Compliance
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input
+                  type="text"
+                  name="gstin"
+                  placeholder="GSTIN Number (Optional)"
+                  value={formData.gstin}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 uppercase"
+                />
+                <input
+                  type="text"
+                  name="pan"
+                  placeholder="PAN Card Number *"
+                  value={formData.pan}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 uppercase"
+                />
+                <input
+                  type="text"
+                  name="udyamNumber"
+                  placeholder="Udyam Registration Number"
+                  value={formData.udyamNumber}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* SECTION 6: Bank Account Details for Payouts */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Landmark size={16} /> 6. Bank Account Details (For Customer Leads & Payouts)
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    name="bankName"
+                    placeholder="Bank Name (e.g. State Bank of India) *"
+                    value={formData.bankName}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <input
+                    type="text"
+                    name="accountHolderName"
+                    placeholder="Account Holder Name *"
+                    value={formData.accountHolderName}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    name="accountNumber"
+                    placeholder="Account Number *"
+                    value={formData.accountNumber}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                  <input
+                    type="text"
+                    name="confirmAccountNumber"
+                    placeholder="Confirm Account Number *"
+                    value={formData.confirmAccountNumber}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                  <input
+                    type="text"
+                    name="ifsc"
+                    placeholder="IFSC Code * (e.g. SBIN0001234)"
+                    value={formData.ifsc}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 uppercase font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 7: Passwords & Security */}
+            <div>
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <ShieldCheck size={16} /> 7. Security Credentials
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Password *"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    name="confirmPassword"
+                    placeholder="Confirm Password *"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -426,24 +550,20 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 onChange={(e) => setIsCorporate(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500"
               />
-              <span className="text-sm text-slate-300">Register as Corporate Client?</span>
+              <span className="text-sm text-slate-300">Register as Corporate Supplier / Large Manufacturer?</span>
             </label>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wide hover:from-amber-400 hover:to-amber-300 transition mt-4"
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-4 rounded-xl font-bold uppercase tracking-wider hover:from-amber-400 hover:to-amber-300 transition shadow-xl mt-6"
             >
-              {loading ? 'Processing...' : 'Register & Send OTP'}
+              {loading ? 'Submitting Registration...' : 'Complete Registration & Send OTP'}
             </button>
 
-            <p className="text-center text-sm text-slate-400 pt-2">
+            <p className="text-center text-sm text-slate-400 pt-4">
               Already have an account?{' '}
-              <button
-                type="button"
-                onClick={() => goTo('login')}
-                className="text-amber-500 font-semibold hover:underline"
-              >
+              <button type="button" onClick={() => goTo('login')} className="text-amber-500 font-semibold hover:underline">
                 Login Now
               </button>
             </p>
@@ -454,16 +574,8 @@ export function AuthCard({ mode = 'login', onNavigate }) {
   );
 }
 
-export function LoginPage({ onNavigate }) {
-  return <AuthCard mode="login" onNavigate={onNavigate} />;
-}
-
-export function SignupPage({ onNavigate }) {
-  return <AuthCard mode="signup" onNavigate={onNavigate} />;
-}
-
-export function VerifyOtp({ onNavigate }) {
-  return <AuthCard mode="verify-otp" onNavigate={onNavigate} />;
-}
+export function LoginPage({ onNavigate }) { return <AuthCard mode="login" onNavigate={onNavigate} />; }
+export function SignupPage({ onNavigate }) { return <AuthCard mode="signup" onNavigate={onNavigate} />; }
+export function VerifyOtp({ onNavigate }) { return <AuthCard mode="verify-otp" onNavigate={onNavigate} />; }
 
 export default AuthCard;

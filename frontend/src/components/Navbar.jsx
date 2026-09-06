@@ -25,22 +25,18 @@ export default function Navbar() {
     navigate('/');
     setTimeout(() => {
       const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
+      if (element) element.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
 
   const handleLocationSearch = (e) => {
     e.preventDefault();
     if (!pincodeInput.trim()) return;
-    // Pincode ko save karke dealers page par redirect kar denge
     localStorage.setItem("userPincode", pincodeInput.trim());
     setIsLocationModalOpen(false);
     navigate(`/dealers?pincode=${pincodeInput.trim()}`);
   };
 
-  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -63,16 +59,13 @@ export default function Navbar() {
                 onClick={() => goTo("/")}
                 aria-label="Go to Homepage"
                 className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition"
-                title="Home"
               >
                 <Home size={20} />
               </button>
 
-              {/* LOCATION BUTTON (Customer ke liye bina login ke) */}
               <button
                 onClick={() => setIsLocationModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-800 text-amber-400 hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-700"
-                title="Select Location / Find Dealers"
               >
                 <MapPin size={18} className="text-amber-500 animate-pulse" />
                 <span className="hidden sm:inline">Select Location</span>
@@ -112,7 +105,6 @@ export default function Navbar() {
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition"
-                  aria-label="Account"
                 >
                   <User size={22} />
                 </button>
@@ -120,7 +112,7 @@ export default function Navbar() {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
                     <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition">
-                      Login (Dealers)
+                      Dealer Login
                     </button>
                     <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700">
                       Register Dealer
@@ -132,47 +124,19 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <div className="md:hidden">
-              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-200 p-2" aria-label="Toggle Menu">
+              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-200 p-2">
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
               </button>
             </div>
           </div>
         </div>
-
-        {/* Mobile Dropdown Menu */}
-        {isOpen && (
-          <div className="md:hidden bg-slate-900 px-4 pt-2 pb-6 space-y-3 border-b border-slate-800 shadow-xl">
-            <a href="#services" onClick={(e) => scrollToSection(e, "services")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Services</a>
-            <a href="#specifications" onClick={(e) => scrollToSection(e, "specifications")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Specifications</a>
-            <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">About</a>
-            <a href="#contact" onClick={(e) => scrollToSection(e, "contact-form")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Contact</a>
-
-            <div className="border-t border-slate-800 pt-3 space-y-2">
-              <button onClick={() => goTo("/login")} className="flex items-center gap-2 w-full text-left py-2 text-amber-500 font-semibold">
-                <User size={18} /> Dealer Login
-              </button>
-              <button onClick={() => goTo("/register")} className="flex items-center gap-2 w-full text-left py-2 text-amber-500 font-semibold">
-                <User size={18} /> Register as Dealer
-              </button>
-            </div>
-
-            <div className="pt-2">
-              <a href="tel:+918439860719" className="inline-flex items-center justify-center gap-2 w-full bg-amber-500 text-slate-950 py-3 rounded-lg font-bold">
-                <Phone size={18} /> Call Now
-              </a>
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* LOCATION POPUP MODAL */}
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-            <button 
-              onClick={() => setIsLocationModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
-            >
+            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X size={24} />
             </button>
 
@@ -202,10 +166,7 @@ export default function Navbar() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2"
-              >
+              <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 rounded-xl transition shadow-lg">
                 Search Available Dealers
               </button>
             </form>
