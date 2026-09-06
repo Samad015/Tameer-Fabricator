@@ -22,20 +22,20 @@ const userSchema = new mongoose.Schema({
   state: { type: String, default: 'Uttar Pradesh' },
   pincode: { type: String, required: true, index: true }, // Index for fast location search
 
-  // Pricing & Services Catalog
-  pricingDetails: { type: String, required: true },
+  // Pricing & Services Catalog (Made optional)
+  pricingDetails: { type: String },
   servicesOffered: { type: String },
 
-  // Legal & Tax Compliance
+  // Legal & Tax Compliance (PAN and GSTIN made optional or adjusted)
   gstin: { type: String, uppercase: true, trim: true },
-  pan: { type: String, required: true, uppercase: true, trim: true },
+  pan: { type: String, uppercase: true, trim: true },
   udyamNumber: { type: String },
 
-  // Bank Account Details for Payouts
-  bankName: { type: String, required: true },
-  accountNumber: { type: String, required: true },
-  ifsc: { type: String, required: true, uppercase: true, trim: true },
-  accountHolderName: { type: String, required: true },
+  // Bank Account Details for Payouts (Made optional since Section 6 is commented out)
+  bankName: { type: String },
+  accountNumber: { type: String },
+  ifsc: { type: String, uppercase: true, trim: true },
+  accountHolderName: { type: String },
 
   // Role & Verification Status
   role: { type: String, enum: ['dealer', 'customer', 'admin'], default: 'dealer' },
