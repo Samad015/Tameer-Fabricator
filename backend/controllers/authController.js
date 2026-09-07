@@ -9,6 +9,7 @@ exports.register = async (req, res) => {
       name, email, password, phone, altPhone,
       companyName, businessType, category, experienceYears,
       address, landmark, area, city, state, pincode,
+      perKgPrice,
       pricingDetails, servicesOffered,
       gstin, pan, udyamNumber,
       bankName, accountNumber, ifsc, accountHolderName,
@@ -46,6 +47,7 @@ exports.register = async (req, res) => {
       city,
       state: state || 'Uttar Pradesh',
       pincode,
+      perKgPrice: perKgPrice ? Number(perKgPrice) : 0, // Safe conversion to Number
       pricingDetails,
       servicesOffered,
       gstin,
@@ -103,7 +105,7 @@ exports.register = async (req, res) => {
 
   } catch (error) {
     console.error('Registration Error:', error);
-    return res.status(500).json({ success: false, message: 'Server error during registration' });
+    return res.status(500).json({ success: false, message: error.message || 'Server error during registration' });
   }
 };
 
@@ -130,11 +132,11 @@ exports.verifyOtp = async (req, res) => {
     user.otpExpires = undefined;
     await user.save();
 
-    res.status(200).json({ success: true, message: 'Account verified successfully!' });
+    return res.status(200).json({ success: true, message: 'Account verified successfully!' });
 
   } catch (error) {
     console.error('Verify OTP Error:', error.message);
-    res.status(500).json({ success: false, message: 'Server error during verification' });
+    return res.status(500).json({ success: false, message: error.message || 'Server error during verification' });
   }
 };
 
@@ -163,7 +165,7 @@ exports.login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.status(200).json({ 
+    return res.status(200).json({ 
       success: true, 
       message: 'Login successful!', 
       token, 
@@ -177,7 +179,7 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error('Login Error:', error.message);
-    res.status(500).json({ success: false, message: 'Server error during login' });
+    return res.status(500).json({ success: false, message: error.message || 'Server error during login' });
   }
 };
 
@@ -197,8 +199,8 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found in database' });
     }
 
-    res.status(200).json({ success: true, user });
+    return res.status(200).json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

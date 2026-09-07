@@ -1,134 +1,296 @@
 import React, { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { MapPin, Phone, Building2, UserCheck, ShieldAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Building2, User, MapPin, Briefcase, 
+  ShieldCheck, Edit3, Save, X, Loader2 
+} from "lucide-react";
 
 export default function DealerDashboard() {
-  const [searchParams] = useSearchParams();
-  const pincodeQuery = searchParams.get("pincode") || localStorage.getItem("userPincode") || "";
-  
-  const [dealers, setDealers] = useState([]);
+  const navigate = useNavigate();
+  const [dealer, setDealer] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [pincode, setPincode] = useState(pincodeQuery);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const [formData, setFormData] = useState({});
 
-  const fetchDealers = async (pin) => {
-    if (!pin) return;
-    setLoading(true);
+  // Dynamic API URL for Render production & local development
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+  const fetchProfile = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/dealers/search?pincode=${pin}`);
+      const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const data = await res.json();
       if (data.success) {
-        setDealers(data.dealers);
+        setDealer(data.user);
+        setFormData(data.user);
+      } else {
+        localStorage.removeItem("token");
+        navigate("/login");
       }
     } catch (err) {
-      console.error("Error fetching dealers:", err);
+      console.error("Error fetching profile:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (pincodeQuery) {
-      fetchDealers(pincodeQuery);
-    } else {
-      setLoading(false);
-    }
-  }, [pincodeQuery]);
+    fetchProfile();
+  }, []);
 
-  const handleSearchSubmit = (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (pincode) {
-      localStorage.setItem("userPincode", pincode);
-      fetchDealers(pincode);
+    setSaving(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/update-profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Profile updated successfully!");
+        setDealer(data.user || formData);
+        setIsEditing(false);
+      } else {
+        alert(data.message || "Failed to update profile");
+      }
+    } catch (err) {
+      console.error("Update Error:", err);
+      alert("Something went wrong while updating profile.");
+    } finally {
+      setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-500">
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+    );
+  }
+
+  if (!dealer) return null;
+
   return (
     <div className="min-h-screen bg-slate-950 text-white py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         
-        {/* Header & Search Bar for Customers */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <MapPin className="text-amber-500" /> Find Local Rolling Shutter & Metal Fabricators
+            <span className="bg-amber-500/10 text-amber-400 text-xs font-semibold px-3 py-1 rounded-full border border-amber-500/20 inline-flex items-center gap-1 mb-2">
+              <ShieldCheck size={14} /> {dealer.isVerified ? "Verified Dealer Account" : "Pending Verification"}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+              <Building2 className="text-amber-500" /> {dealer.companyName}
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Showing verified experts available for your service near pincode: <span className="text-amber-400 font-mono font-bold">{pincode || "Not Set"}</span>
+              Manage your workshop profile, pricing catalog, and business details.
             </p>
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="flex gap-2 w-full md:w-auto">
-            <input
-              type="text"
-              value={pincode}
-              onChange={(e) => setPincode(e.target.value)}
-              placeholder="Enter Pincode..."
-              maxLength="6"
-              className="bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm font-mono"
-            />
-            <button type="submit" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition text-sm">
-              Search
+          {!isEditing ? (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2 text-sm shadow-md"
+            >
+              <Edit3 size={16} /> Edit Profile & Pricing
             </button>
-          </form>
+          ) : (
+            <button
+              onClick={() => { setIsEditing(false); setFormData(dealer); }}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2 text-sm border border-slate-700"
+            >
+              <X size={16} /> Cancel
+            </button>
+          )}
         </div>
 
-        {/* Results Section */}
-        {loading ? (
-          <div className="text-center py-20 text-slate-400">Searching available fabricators in your area...</div>
-        ) : dealers.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dealers.map((dealer) => (
-              <div key={dealer._id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between hover:border-amber-500/50 transition">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="bg-amber-500/10 text-amber-400 text-xs font-semibold px-3 py-1 rounded-full border border-amber-500/20 flex items-center gap-1">
-                      <UserCheck size={14} /> Verified Partner
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
-                    <Building2 size={20} className="text-amber-500" /> {dealer.companyName}
-                  </h3>
-                  <p className="text-xs text-slate-400 mb-4">Expert / Owner: <span className="text-slate-200">{dealer.name}</span></p>
-
-                  <div className="space-y-2 text-sm text-slate-300 mb-6 bg-slate-950/50 p-4 rounded-xl border border-slate-800/60">
-                    <p className="flex items-start gap-2">
-                      <MapPin size={16} className="text-amber-500 mt-1 shrink-0" />
-                      <span>{dealer.address}, Area: {dealer.area}, City: {dealer.city}</span>
-                    </p>
-                    {dealer.pricingDetails && (
-                      <p className="text-xs text-amber-300 font-medium mt-2 pt-2 border-t border-slate-800">
-                        <strong>Pricing / Offer:</strong> {dealer.pricingDetails}
-                      </p>
-                    )}
-                  </div>
+        {!isEditing ? (
+          <div className="space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                <User size={16} /> Personal & Contact Info
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Owner Name</span>
+                  <span className="font-semibold text-white">{dealer.name}</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Link
-                    to={`/dealer/${dealer._id}`}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 border border-slate-700 text-sm"
-                  >
-                    View Profile & Catalog
-                  </Link>
-                  <a
-                    href={`tel:${dealer.phone}`}
-                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md text-sm"
-                  >
-                    <Phone size={16} /> Call Expert: {dealer.phone}
-                  </a>
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Email Address</span>
+                  <span className="font-semibold text-white">{dealer.email}</span>
+                </div>
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Phone Number</span>
+                  <span className="font-semibold text-white">{dealer.phone}</span>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Briefcase size={16} /> Business & Pricing Catalog
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Business Type</span>
+                  <span className="font-semibold text-white">{dealer.businessType || 'Proprietorship'}</span>
+                </div>
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Experience</span>
+                  <span className="font-semibold text-white">{dealer.experienceYears || 'Not specified'}</span>
+                </div>
+                <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                  <span className="text-amber-400 block text-xs font-medium">Per KG Shutter Price</span>
+                  <span className="font-black text-amber-300 text-lg">₹{dealer.perKgPrice || 0} / KG</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Pricing Details / Highlights</span>
+                  <span className="text-slate-200">{dealer.pricingDetails || 'No special pricing highlights added.'}</span>
+                </div>
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-xs">Services Offered</span>
+                  <span className="text-slate-200">{dealer.servicesOffered || 'General Manufacturing & Installation'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                <MapPin size={16} /> Workshop Location
+              </h3>
+              <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 text-sm space-y-2">
+                <p><strong>Address:</strong> {dealer.address}</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 text-xs text-slate-300">
+                  <div>Area: <strong>{dealer.area}</strong></div>
+                  <div>City: <strong>{dealer.city}</strong></div>
+                  <div>State: <strong>{dealer.state}</strong></div>
+                  <div>Pincode: <strong className="text-amber-400 font-mono">{dealer.pincode}</strong></div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-20 bg-slate-900 border border-slate-800 rounded-2xl p-8">
-            <ShieldAlert size={48} className="mx-auto text-amber-500 mb-4" />
-            <h3 className="text-lg font-bold text-white mb-2">No Fabricators Found in this Pincode</h3>
-            <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Currently there are no active registered fabricators for pincode <strong>{pincode}</strong>. Try searching a nearby pincode or call our direct helpline for assistance.
-            </p>
-          </div>
+          <form onSubmit={handleUpdateProfile} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+            <h3 className="text-lg font-bold text-amber-400 border-b border-slate-800 pb-3">Edit Workshop & Pricing Details</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Company / Workshop Name</label>
+                <input
+                  type="text"
+                  name="companyName"
+                  value={formData.companyName || ""}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Per KG Shutter Price (₹)</label>
+                <input
+                  type="number"
+                  name="perKgPrice"
+                  value={formData.perKgPrice || ""}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Business Type</label>
+                <select
+                  name="businessType"
+                  value={formData.businessType || "Proprietorship"}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                >
+                  <option value="Proprietorship">Proprietorship</option>
+                  <option value="Partnership">Partnership</option>
+                  <option value="Private Limited">Private Limited</option>
+                  <option value="Individual Fabricator">Individual Fabricator</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Experience Years</label>
+                <input
+                  type="text"
+                  name="experienceYears"
+                  value={formData.experienceYears || ""}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Pricing Highlight</label>
+                <input
+                  type="text"
+                  name="pricingDetails"
+                  value={formData.pricingDetails || ""}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Services Offered</label>
+                <input
+                  type="text"
+                  name="servicesOffered"
+                  value={formData.servicesOffered || ""}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => { setIsEditing(false); setFormData(dealer); }}
+                className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg"
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Save Changes
+              </button>
+            </div>
+          </form>
         )}
 
       </div>
