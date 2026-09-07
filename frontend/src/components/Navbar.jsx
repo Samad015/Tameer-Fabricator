@@ -24,7 +24,7 @@ export default function Navbar() {
   const isDealerPage = location.pathname.startsWith("/dealer");
 
   // Reverse geocoding for GPS with proper state formatting
-  const fetchAddressFromCoords = async (latitude, longitude, isAutomatic = false) => {
+  const fetchAddressFromCoords = async (latitude, longitude) => {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
@@ -45,24 +45,22 @@ export default function Navbar() {
 
         const locationString = `${city}, ${stateName}`;
         
+        // LocalStorage mein save karein taaki data persist rahe
         localStorage.setItem("userLocationName", locationString);
         localStorage.setItem("userCity", city);
+        
+        // Sirf Navbar ka text update hoga, page redirect nahi hoga!
         setCurrentLocationText(locationString);
         setDetectingGPS(false);
         setIsLocationModalOpen(false);
 
-        // Agar automatic background fetch hai toh sirf state update karenge, 
-        // har bar reload par zabardasti dashboard par redirect nahi karenge taaki user ka current page disturb na ho.
-        if (!isAutomatic) {
-          navigate(`/dashboard?city=${encodeURIComponent(city)}`);
-        }
+        // NOTE: Yahan se navigate('/dashboard...') hata diya gaya hai 
+        // taaki user apne current page par hi bana rahe.
       }
     } catch (error) {
       console.error("Geocoding error:", error);
       setDetectingGPS(false);
-      if (!isAutomatic) {
-        alert("Failed to fetch address from coordinates.");
-      }
+      alert("Failed to fetch address from coordinates.");
     }
   };
 
@@ -72,11 +70,9 @@ export default function Navbar() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // true pass kiya hai taaki background mein silent update ho jaye aur user disturb na ho
-          fetchAddressFromCoords(latitude, longitude, true);
+          fetchAddressFromCoords(latitude, longitude);
         },
         (error) => {
-          // Agar user ne pehle block kiya hoga ya permission nahi hogi toh chupchap fallback / localStorage wali location use hoti rahegi
           console.warn("Background auto-location skipped or denied:", error.message);
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
@@ -95,7 +91,7 @@ export default function Navbar() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        fetchAddressFromCoords(latitude, longitude, false);
+        fetchAddressFromCoords(latitude, longitude);
       },
       (error) => {
         console.warn("Browser GPS error/denied:", error.message);
@@ -135,7 +131,7 @@ export default function Navbar() {
     return () => clearTimeout(timer);
   }, [locationQuery]);
 
-  // Select location from suggestion dropdown
+  // Select location from suggestion dropdown (Yahan bhi redirection hata di hai)
   const handleSelectSuggestion = (item) => {
     const city = item.address?.city || item.address?.town || item.address?.village || item.address?.state_district || item.display_name.split(",")[0];
     
@@ -157,7 +153,7 @@ export default function Navbar() {
     setLocationQuery("");
     setSuggestions([]);
 
-    navigate(`/dashboard?city=${encodeURIComponent(city)}`);
+    // Redirection removed here as well. User same page par rahega.
   };
 
   const goTo = (path) => {
@@ -323,7 +319,7 @@ export default function Navbar() {
                 <div className="flex-grow border-t border-slate-800"></div>
               </div>
 
-              {/* LinkedIn Style Autocomplete Input */}
+              {/* Autocomplete Input */}
               <div className="relative">
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Type City Name
