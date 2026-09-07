@@ -24,7 +24,7 @@ export default function Navbar() {
   const isDealerPage = location.pathname.startsWith("/dealer");
 
   // Reverse geocoding for GPS with proper state formatting
-  const fetchAddressFromCoords = async (latitude, longitude) => {
+  const fetchAddressFromCoords = async (latitude, longitude, isAutomatic = false) => {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
@@ -51,17 +51,40 @@ export default function Navbar() {
         setDetectingGPS(false);
         setIsLocationModalOpen(false);
 
-        // Dashboard par redirect with city query
-        navigate(`/dashboard?city=${encodeURIComponent(city)}`);
+        // Agar automatic background fetch hai toh sirf state update karenge, 
+        // har bar reload par zabardasti dashboard par redirect nahi karenge taaki user ka current page disturb na ho.
+        if (!isAutomatic) {
+          navigate(`/dashboard?city=${encodeURIComponent(city)}`);
+        }
       }
     } catch (error) {
       console.error("Geocoding error:", error);
       setDetectingGPS(false);
-      alert("Failed to fetch address from coordinates.");
+      if (!isAutomatic) {
+        alert("Failed to fetch address from coordinates.");
+      }
     }
   };
 
-  // Jab user GPS button par click karega, tabhi browser ka official Allow/Block popup aayega
+  // 1. Page Load / Refresh par Automatic Background GPS Check
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // true pass kiya hai taaki background mein silent update ho jaye aur user disturb na ho
+          fetchAddressFromCoords(latitude, longitude, true);
+        },
+        (error) => {
+          // Agar user ne pehle block kiya hoga ya permission nahi hogi toh chupchap fallback / localStorage wali location use hoti rahegi
+          console.warn("Background auto-location skipped or denied:", error.message);
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+  }, []);
+
+  // 2. Jab user modal mein manually GPS button par click karega
   const handleNativeGPSDetect = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -72,7 +95,7 @@ export default function Navbar() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        fetchAddressFromCoords(latitude, longitude);
+        fetchAddressFromCoords(latitude, longitude, false);
       },
       (error) => {
         console.warn("Browser GPS error/denied:", error.message);
