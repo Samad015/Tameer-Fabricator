@@ -11,7 +11,6 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   
-  // Default state localStorage ya fallback se load hogi
   const [currentLocationText, setCurrentLocationText] = useState(() => {
     return localStorage.getItem("userLocationName") || "Bareilly, UP";
   });
@@ -23,7 +22,6 @@ export default function Navbar() {
 
   const isDealerPage = location.pathname.startsWith("/dealer");
 
-  // Reverse geocoding for GPS with proper state formatting
   const fetchAddressFromCoords = async (latitude, longitude) => {
     try {
       const response = await fetch(
@@ -45,17 +43,14 @@ export default function Navbar() {
 
         const locationString = `${city}, ${stateName}`;
         
-        // LocalStorage mein save karein taaki data persist rahe
         localStorage.setItem("userLocationName", locationString);
         localStorage.setItem("userCity", city);
         
-        // Sirf Navbar ka text update hoga, page redirect nahi hoga!
+        window.dispatchEvent(new Event('cityChanged'));
+
         setCurrentLocationText(locationString);
         setDetectingGPS(false);
         setIsLocationModalOpen(false);
-
-        // NOTE: Yahan se navigate('/dashboard...') hata diya gaya hai 
-        // taaki user apne current page par hi bana rahe.
       }
     } catch (error) {
       console.error("Geocoding error:", error);
@@ -64,7 +59,6 @@ export default function Navbar() {
     }
   };
 
-  // 1. Page Load / Refresh par Automatic Background GPS Check
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -80,7 +74,6 @@ export default function Navbar() {
     }
   }, []);
 
-  // 2. Jab user modal mein manually GPS button par click karega
   const handleNativeGPSDetect = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -106,7 +99,6 @@ export default function Navbar() {
     );
   };
 
-  // Live Search Suggestions as user types
   useEffect(() => {
     if (locationQuery.trim().length < 2) {
       setSuggestions([]);
@@ -131,7 +123,6 @@ export default function Navbar() {
     return () => clearTimeout(timer);
   }, [locationQuery]);
 
-  // Select location from suggestion dropdown (Yahan bhi redirection hata di hai)
   const handleSelectSuggestion = (item) => {
     const city = item.address?.city || item.address?.town || item.address?.village || item.address?.state_district || item.display_name.split(",")[0];
     
@@ -148,12 +139,13 @@ export default function Navbar() {
 
     localStorage.setItem("userLocationName", locationString);
     localStorage.setItem("userCity", city);
+
+    window.dispatchEvent(new Event('cityChanged'));
+
     setCurrentLocationText(locationString);
     setIsLocationModalOpen(false);
     setLocationQuery("");
     setSuggestions([]);
-
-    // Redirection removed here as well. User same page par rahega.
   };
 
   const goTo = (path) => {
@@ -211,7 +203,6 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
             
-            {/* Left Action Buttons */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => goTo("/")}
@@ -230,7 +221,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Logo */}
             <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left">
               <img src="/images/logo.jpg" alt="Logo" className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md" />
               <div className="flex flex-col">
@@ -239,7 +229,6 @@ export default function Navbar() {
               </div>
             </button>
 
-            {/* Desktop Links */}
             <div className="hidden md:flex space-x-8 items-center font-medium">
               <a href="#services" onClick={(e) => scrollToSection(e, "services")} className="hover:text-amber-500 transition cursor-pointer">Services</a>
               <a href="#specifications" onClick={(e) => scrollToSection(e, "specifications")} className="hover:text-amber-500 transition cursor-pointer">Specifications</a>
@@ -264,7 +253,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Mobile Menu */}
             <div className="md:hidden">
               <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-200 p-2">
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
@@ -274,7 +262,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* LOCATION POPUP MODAL */}
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
@@ -293,7 +280,6 @@ export default function Navbar() {
             </div>
 
             <div className="space-y-4">
-              {/* Native Browser GPS Trigger Button */}
               <button
                 type="button"
                 onClick={handleNativeGPSDetect}
@@ -319,7 +305,6 @@ export default function Navbar() {
                 <div className="flex-grow border-t border-slate-800"></div>
               </div>
 
-              {/* Autocomplete Input */}
               <div className="relative">
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Type City Name
@@ -342,7 +327,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Suggestions Dropdown */}
                 {suggestions.length > 0 && (
                   <ul className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
                     {suggestions.map((item, index) => (

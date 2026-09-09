@@ -1,22 +1,64 @@
-import React, { useState } from 'react';
-import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, Settings, Hand, FileText, Blinds, Cog, Building, Ruler, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, FileText, Hand, Building, Ruler, ChevronDown, MapPin, Loader2 } from 'lucide-react';
 
 export default function Estimator() {
-  // Configured Rates
-  const PRICE_PER_KG = 95; // Rate per kg (in Rupees)
-  const INCHES_TO_FEET = 1 / 12; // Conversion factor: 1 inch = 1/12 feet
+  const DEFAULT_PRICE_PER_KG = 95; 
+  const INCHES_TO_FEET = 1 / 12;
 
-  // State Management
-  const [shutterType, setShutterType] = useState('manual'); // 'manual' or 'gear'
+  const [shutterType, setShutterType] = useState('manual');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
   const [result, setResult] = useState(null);
 
-  // Unit Selection State (Feet / Inches)
-  const [unit, setUnit] = useState('feet'); // 'feet' or 'inches'
+  const [currentPricePerKg, setCurrentPricePerKg] = useState(DEFAULT_PRICE_PER_KG);
+  const [dealerInfo, setDealerInfo] = useState(null);
+  const [isLoadingRate, setIsLoadingRate] = useState(false);
+  const [rateSourceMessage, setRateSourceMessage] = useState('Standard Default Rate');
+
+  const [unit, setUnit] = useState('feet');
   const [showUnitPopup, setShowUnitPopup] = useState(false);
 
-  // Dynamic Density Based on Selected Shutter Type
+  const fetchDealerRate = async () => {
+    const selectedLocation = localStorage.getItem('userCity') || localStorage.getItem('userLocationName')?.split(',')[0] || 'Bareilly';
+
+    setIsLoadingRate(true);
+    try {
+      const response = await fetch(`/api/dealers/search?location=${encodeURIComponent(selectedLocation)}`);
+      const data = await response.json();
+
+      if (data.success && data.dealers && data.dealers.length > 0) {
+        const activeDealer = data.dealers[0];
+        if (activeDealer.perKgPrice) {
+          setCurrentPricePerKg(activeDealer.perKgPrice);
+          setDealerInfo(activeDealer);
+          setRateSourceMessage(`Live Rate from ${activeDealer.companyName || activeDealer.name} (${activeDealer.area || activeDealer.city}) - ₹${activeDealer.perKgPrice}/kg`);
+        }
+      } else {
+        setCurrentPricePerKg(DEFAULT_PRICE_PER_KG);
+        setDealerInfo(null);
+        setRateSourceMessage(`Standard Rate for ${selectedLocation}`);
+      }
+    } catch (error) {
+      console.error('Error fetching dealer pricing:', error);
+      setCurrentPricePerKg(DEFAULT_PRICE_PER_KG);
+      setRateSourceMessage('Standard Default Rate (Network Fallback)');
+    } finally {
+      setIsLoadingRate(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDealerRate();
+
+    window.addEventListener('cityChanged', fetchDealerRate);
+    window.addEventListener('storage', fetchDealerRate);
+
+    return () => {
+      window.removeEventListener('cityChanged', fetchDealerRate);
+      window.removeEventListener('storage', fetchDealerRate);
+    };
+  }, []);
+
   const weightPerSqFt = shutterType === 'manual' ? 2.2 : 2.6;
 
   const handleCalculate = (e) => {
@@ -24,7 +66,6 @@ export default function Estimator() {
     let w = parseFloat(width) || 0;
     let h = parseFloat(height) || 0;
 
-    // Convert entered dimensions to feet if unit selected is inches
     if (unit === 'inches') {
       w = w * INCHES_TO_FEET;
       h = h * INCHES_TO_FEET;
@@ -32,17 +73,17 @@ export default function Estimator() {
 
     const area = w * h;
     const weight = area * weightPerSqFt;
-    const price = weight * PRICE_PER_KG;
+    const price = weight * currentPricePerKg;
 
     setResult({
       type: shutterType === 'manual' ? 'Manual Shutter' : shutterType === 'gear' ? 'Gear Shutter' : 'Motorized Shutter',
       totalSqFt: area,
       totalWeight: weight,
       estimatedPrice: price,
+      appliedRate: currentPricePerKg,
     });
   };
 
-  // Calculations for Summary Table
   const shutterCost = result ? result.estimatedPrice : 0;
   const lockCost = 700;
   const gearCost = shutterType === 'gear' ? 5000 : 0;
@@ -53,7 +94,6 @@ export default function Estimator() {
     <section id="estimator" className="py-20 bg-slate-900 text-white border-t border-slate-800">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         
-        {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-500 px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide mb-4">
             <Calculator size={18} /> Instant Price Estimator
@@ -62,17 +102,26 @@ export default function Estimator() {
             Calculate Shutter Cost
           </h2>
           <p className="text-slate-400 text-sm md:text-base mt-2">
-            Select shutter type and enter dimensions to get actual weight & estimated price.
+            Pricing automatically adapted to your selected city's verified workshop.
           </p>
+          
+          <div className="mt-4 inline-flex items-center gap-2 bg-slate-950 border border-slate-800 px-3.5 py-1.5 rounded-xl text-xs text-slate-300 shadow-md">
+            <MapPin size={14} className="text-amber-500" />
+            {isLoadingRate ? (
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Loader2 size={12} className="animate-spin text-amber-500" /> Fetching city dealer rate...
+              </span>
+            ) : (
+              <span>
+                <strong className="text-amber-400">{rateSourceMessage}</strong>
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Calculator Main Box */}
         <div className="bg-slate-950 p-6 md:p-10 rounded-2xl border border-slate-800 shadow-2xl grid md:grid-cols-2 gap-8 items-start">
           
-          {/* Inputs Section */}
           <form onSubmit={handleCalculate} className="space-y-4">
-            
-            {/* Shutter Type Selector Tabs */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-2 uppercase">
                 Select Shutter Type *
@@ -80,42 +129,27 @@ export default function Estimator() {
               <div className="grid grid-cols-3 gap-3 p-1.5 bg-slate-900 border border-slate-800 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShutterType('manual');
-                    setResult(null);
-                  }}
+                  onClick={() => { setShutterType('manual'); setResult(null); }}
                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase transition cursor-pointer ${
-                    shutterType === 'manual'
-                      ? 'bg-amber-500 text-slate-950 shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                    shutterType === 'manual' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Hand size={16} /> Manual 
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShutterType('gear');
-                    setResult(null);
-                  }}
+                  onClick={() => { setShutterType('gear'); setResult(null); }}
                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase transition cursor-pointer ${
-                    shutterType === 'gear'
-                      ? 'bg-amber-500 text-slate-950 shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                    shutterType === 'gear' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Cog size={16} /> Gear 
+                  <Building size={16} /> Gear 
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShutterType('motorized');
-                    setResult(null);
-                  }}
+                  onClick={() => { setShutterType('motorized'); setResult(null); }}
                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase transition cursor-pointer ${
-                    shutterType === 'motorized'
-                      ? 'bg-amber-500 text-slate-950 shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                    shutterType === 'motorized' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Building size={16} /> Motorized 
@@ -123,7 +157,6 @@ export default function Estimator() {
               </div>
             </div>
 
-            {/* Unit Selector Popup (Feet / Inches) - NEW FEATURE */}
             <div className="relative">
               <label className="block text-xs font-bold text-slate-300 mb-2 uppercase">
                 Select Unit *
@@ -144,11 +177,7 @@ export default function Estimator() {
                 <div className="absolute z-20 mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => {
-                      setUnit('feet');
-                      setShowUnitPopup(false);
-                      setResult(null);
-                    }}
+                    onClick={() => { setUnit('feet'); setShowUnitPopup(false); setResult(null); }}
                     className={`w-full text-left px-3.5 py-2.5 text-sm font-bold transition cursor-pointer ${
                       unit === 'feet' ? 'bg-amber-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
                     }`}
@@ -157,11 +186,7 @@ export default function Estimator() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setUnit('inches');
-                      setShowUnitPopup(false);
-                      setResult(null);
-                    }}
+                    onClick={() => { setUnit('inches'); setShowUnitPopup(false); setResult(null); }}
                     className={`w-full text-left px-3.5 py-2.5 text-sm font-bold transition cursor-pointer ${
                       unit === 'inches' ? 'bg-amber-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
                     }`}
@@ -172,11 +197,10 @@ export default function Estimator() {
               )}
             </div>
 
-            {/* Customer Editable Inputs */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase">
-                  Width (Feet)
+                  Width ({unit === 'feet' ? 'Feet' : 'Inches'})
                 </label>
                 <input 
                   type="number" 
@@ -185,13 +209,13 @@ export default function Estimator() {
                   value={width} 
                   onChange={(e) => setWidth(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-500 font-bold"
-                  placeholder="Enter width"
+                  placeholder={unit === 'feet' ? 'Enter width in ft' : 'Enter width in in'}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase">
-                  Height (Feet)
+                  Height ({unit === 'feet' ? 'Feet' : 'Inches'})
                 </label>
                 <input 
                   type="number" 
@@ -200,12 +224,11 @@ export default function Estimator() {
                   value={height} 
                   onChange={(e) => setHeight(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-500 font-bold"
-                  placeholder="Enter height"
+                  placeholder={unit === 'feet' ? 'Enter height in ft' : 'Enter height in in'}
                 />
               </div>
             </div>
 
-            {/* Read-Only Fixed Rate & Dynamic Weight Cards */}
             <div className="grid grid-cols-2 gap-4 pt-1">
               <div>
                 <label className="flex items-center justify-between text-xs font-bold text-slate-400 mb-1.5">
@@ -222,14 +245,14 @@ export default function Estimator() {
 
               <div>
                 <label className="flex items-center justify-between text-xs font-bold text-slate-400 mb-1.5">
-                  Rate (₹ / kg) <Lock size={12} className="text-slate-500" />
+                  City Rate (₹ / kg) <Lock size={12} className="text-slate-500" />
                 </label>
                 <input 
                   type="text" 
                   readOnly
                   disabled
-                  value={`₹${PRICE_PER_KG}`}
-                  className="w-full bg-slate-900/50 border border-slate-800/80 rounded-xl px-3.5 py-2.5 text-slate-400 font-bold cursor-not-allowed select-none"
+                  value={`₹${currentPricePerKg}`}
+                  className="w-full bg-slate-900/50 border border-slate-800/80 rounded-xl px-3.5 py-2.5 text-amber-400 font-bold cursor-not-allowed select-none"
                 />
               </div>
             </div>
@@ -242,7 +265,6 @@ export default function Estimator() {
             </button>
           </form>
 
-          {/* Price & Specifications Output Display */}
           <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 text-center flex flex-col justify-between min-h-[340px]">
             <h3 className="text-slate-400 font-bold uppercase tracking-wider text-xs border-b border-slate-800 pb-3">
               Calculated Specifications
@@ -250,8 +272,6 @@ export default function Estimator() {
 
             {result ? (
               <div className="space-y-6 my-auto py-2">
-                
-                {/* Selected Type Badge */}
                 <div className="inline-block bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                   {result.type}
                 </div>
@@ -269,7 +289,7 @@ export default function Estimator() {
 
                 <div>
                   <span className="text-slate-400 text-xs uppercase tracking-widest block mb-1 font-semibold">
-                    Actual Shutter Price
+                    Actual Shutter Price (@ ₹{result.appliedRate}/kg)
                   </span>
                   <div className="text-3xl sm:text-4xl font-black text-amber-500 flex items-center justify-center gap-1">
                     <IndianRupee size={28} />
@@ -280,7 +300,7 @@ export default function Estimator() {
                       })}
                     </span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block mt-1">*Included GST & installation charges basic rate</span>
+                  <span className="text-[11px] text-slate-500 block mt-1">*Based on active city workshop pricing</span>
                 </div>
 
                 <a 
@@ -300,7 +320,6 @@ export default function Estimator() {
 
         </div>
 
-        {/* Dynamic Cost Components Summary Section Below Calculator */}
         <div className="mt-10 bg-slate-950 p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-xl">
           <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
             <FileText size={18} className="text-amber-500" />
@@ -321,7 +340,7 @@ export default function Estimator() {
               <tbody className="divide-y divide-slate-800/60">
                 <tr className="hover:bg-slate-900/40">
                   <td className="p-3 font-semibold text-white">Actual Shutter Price</td>
-                  <td className="p-3 text-slate-400">Weight × Rate</td>
+                  <td className="p-3 text-slate-400">Weight × ₹{currentPricePerKg}/kg</td>
                   <td className="p-3 text-right font-mono font-bold text-amber-400">
                     ₹{shutterCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
@@ -359,10 +378,6 @@ export default function Estimator() {
               </tbody>
             </table>
           </div>
-
-          <p className="mt-4 text-xs text-slate-400 italic bg-slate-900/50 p-3 rounded-xl border border-slate-800/60">
-            * <strong className="text-amber-500 font-semibold">Excluded Freight Charge:</strong> Distance (km) × Per km Rate (e.g., ₹50/km)
-          </p>
         </div>
 
       </div>
