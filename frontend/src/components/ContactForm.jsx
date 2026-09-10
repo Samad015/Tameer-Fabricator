@@ -100,8 +100,8 @@ export default function ContactForm() {
         <div
           className={`p-3 rounded-lg flex items-center gap-2 text-xs font-semibold ${
             status.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-              : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+              : "bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400"
           }`}
         >
           {status.type === "success" ? (
@@ -115,7 +115,7 @@ export default function ContactForm() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
             Full Name *
           </label>
           <input
@@ -125,12 +125,12 @@ export default function ContactForm() {
             value={formData.name}
             onChange={handleChange}
             placeholder="John Doe"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
             Phone Number *
           </label>
           <input
@@ -140,14 +140,14 @@ export default function ContactForm() {
             value={formData.phone}
             onChange={handleChange}
             placeholder="+91 00000 00000"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
             Width (in ft)
           </label>
           <input
@@ -156,12 +156,12 @@ export default function ContactForm() {
             value={formData.width}
             onChange={handleChange}
             placeholder="e.g. 10"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-200">
+          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
             Height (in ft)
           </label>
           <input
@@ -170,20 +170,20 @@ export default function ContactForm() {
             value={formData.height}
             onChange={handleChange}
             placeholder="e.g. 8"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
           />
         </div>
       </div>
 
       {/* Unit Selection (Feet / Inches) - NEW FIELD ADDED FOR EMAIL DATA */}
       <div>
-        <label className="block text-xs font-semibold mb-1 text-slate-200">
+        <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
           Unit
         </label>
         <button
           type="button"
           onClick={() => setShowUnitPopup(true)}
-          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-left text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer flex items-center gap-2"
+          className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-left text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer flex items-center gap-2"
         >
           <Ruler size={14} className="text-amber-500" />
           {formData.unit}
@@ -191,20 +191,20 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label className="block text-xs font-semibold mb-1 text-slate-200">
+        <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
           Shutter Type
         </label>
         <button
           type="button"
           onClick={() => setShowShutterPopup(true)}
-          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-left text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer"
+          className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-left text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer"
         >
           {formData.shutterType ? formData.shutterType : "Select Shutter Type"}
         </button>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold mb-1 text-slate-200">
+        <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
           Requirements / Project Specs
         </label>
         <textarea
@@ -213,7 +213,7 @@ export default function ContactForm() {
           value={formData.message}
           onChange={handleChange}
           placeholder="Describe your requirement..."
-          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-500 transition resize-none"
+          className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition resize-none"
         ></textarea>
       </div>
 
@@ -239,10 +239,10 @@ export default function ContactForm() {
           onClick={() => setShowShutterPopup(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-700 rounded-xl p-4 w-full max-w-xs"
+            className="bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-xl p-4 w-full max-w-xs"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-bold text-white mb-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
               Select Shutter Type
             </h3>
             <div className="space-y-2">
@@ -254,7 +254,7 @@ export default function ContactForm() {
                   className={`w-full text-left p-2 text-sm rounded-lg border transition cursor-pointer ${
                     formData.shutterType === type
                       ? "bg-amber-500 border-amber-500 text-slate-950 font-bold"
-                      : "bg-slate-800 border-slate-700 text-white hover:border-amber-500"
+                      : "bg-slate-100 border-slate-300 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white hover:border-amber-500"
                   }`}
                 >
                   {type}
@@ -264,7 +264,7 @@ export default function ContactForm() {
             <button
               type="button"
               onClick={() => setShowShutterPopup(false)}
-              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-700 text-slate-300 hover:border-amber-500 transition cursor-pointer"
+              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-500 transition cursor-pointer"
             >
               Cancel
             </button>
@@ -279,10 +279,10 @@ export default function ContactForm() {
           onClick={() => setShowUnitPopup(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-700 rounded-xl p-4 w-full max-w-xs"
+            className="bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-xl p-4 w-full max-w-xs"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-bold text-white mb-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
               Select Unit
             </h3>
             <div className="space-y-2">
@@ -294,7 +294,7 @@ export default function ContactForm() {
                   className={`w-full text-left p-2 text-sm rounded-lg border transition cursor-pointer ${
                     formData.unit === unitOption
                       ? "bg-amber-500 border-amber-500 text-slate-950 font-bold"
-                      : "bg-slate-800 border-slate-700 text-white hover:border-amber-500"
+                      : "bg-slate-100 border-slate-300 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white hover:border-amber-500"
                   }`}
                 >
                   {unitOption}
@@ -304,7 +304,7 @@ export default function ContactForm() {
             <button
               type="button"
               onClick={() => setShowUnitPopup(false)}
-              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-700 text-slate-300 hover:border-amber-500 transition cursor-pointer"
+              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-500 transition cursor-pointer"
             >
               Cancel
             </button>

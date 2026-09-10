@@ -1,13 +1,36 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Phone, User, Home, MapPin } from "lucide-react";
+import { Menu, X, Phone, User, Home, MapPin, Sun, Moon } from "lucide-react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [pincodeInput, setPincodeInput] = useState("");
-  
+
+  // ---------- THEME STATE ----------
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") || "dark";
+    }
+    return "dark";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+  // -----------------------------------
+
   const profileRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,13 +79,13 @@ export default function Navbar() {
   /* ---------------------------------------------------------- */
   if (isDealerPage) {
     return (
-      <nav className="bg-slate-900 text-white sticky top-0 z-50 border-b border-slate-800">
+      <nav className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center gap-4">
             <button
               onClick={() => goTo("/")}
               aria-label="Go to Homepage"
-              className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition"
+              className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition"
             >
               <Home size={20} />
             </button>
@@ -77,10 +100,19 @@ export default function Navbar() {
                 <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">
                   Welcome to
                 </span>
-                <span className="text-lg sm:text-xl font-black text-white tracking-wide uppercase leading-none">
+                <span className="text-lg sm:text-xl font-black tracking-wide uppercase leading-none">
                   Tameer Fabricator's
                 </span>
               </div>
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="ml-auto h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+            >
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
           </div>
         </div>
@@ -93,7 +125,7 @@ export default function Navbar() {
   /* ---------------------------------------------------------- */
   return (
     <>
-      <nav className="bg-slate-900 text-white sticky top-0 z-50 border-b border-slate-800">
+      <nav className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
             
@@ -102,14 +134,14 @@ export default function Navbar() {
               <button
                 onClick={() => goTo("/")}
                 aria-label="Go to Homepage"
-                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition"
+                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition"
               >
                 <Home size={20} />
               </button>
 
               <button
                 onClick={() => setIsLocationModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-800 text-amber-400 hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-700"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-200 dark:border-slate-700"
               >
                 <MapPin size={18} className="text-amber-500 animate-pulse" />
                 <span className="hidden sm:inline">Select Location</span>
@@ -127,7 +159,7 @@ export default function Navbar() {
                 <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">
                   Welcome to
                 </span>
-                <span className="text-lg sm:text-xl font-black text-white tracking-wide uppercase leading-none">
+                <span className="text-lg sm:text-xl font-black tracking-wide uppercase leading-none">
                   Tameer Fabricator's
                 </span>
               </div>
@@ -144,21 +176,30 @@ export default function Navbar() {
                 <Phone size={18} /> Call Now
               </a>
 
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700"
+              >
+                {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+
               {/* Profile / Account Dropdown */}
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition"
+                  className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition"
                 >
                   <User size={22} />
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
-                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition">
+                  <div className="absolute right-0 mt-3 w-44 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
+                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition">
                       Dealer Login
                     </button>
-                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700">
+                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-200 dark:border-slate-700">
                       Register Dealer
                     </button>
                   </div>
@@ -167,8 +208,16 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-200 p-2">
+            <div className="md:hidden flex items-center gap-2">
+              {/* Theme Toggle Button (mobile) */}
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-700 dark:text-slate-200 p-2">
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
               </button>
             </div>
@@ -179,8 +228,8 @@ export default function Navbar() {
       {/* LOCATION POPUP MODAL */}
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <div className="bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white">
               <X size={24} />
             </button>
 
@@ -189,14 +238,14 @@ export default function Navbar() {
                 <MapPin size={28} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Find Local Dealer</h3>
-                <p className="text-xs text-slate-400">Enter your pincode to check nearby fabricators</p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Find Local Dealer</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Enter your pincode to check nearby fabricators</p>
               </div>
             </div>
 
             <form onSubmit={handleLocationSearch} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider mb-2">
                   Enter Pincode (e.g. 243001)
                 </label>
                 <input
@@ -205,7 +254,7 @@ export default function Navbar() {
                   value={pincodeInput}
                   onChange={(e) => setPincodeInput(e.target.value)}
                   placeholder="Enter 6-digit Pincode"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono text-lg"
+                  className="w-full bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono text-lg"
                   required
                 />
               </div>
