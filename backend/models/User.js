@@ -18,11 +18,12 @@ const userSchema = new mongoose.Schema({
   address: { type: String, required: true },
   landmark: { type: String },
   area: { type: String, required: true },
-  city: { type: String, required: true },
+  city: { type: String, required: true, index: true }, // Index added for fast city matching
   state: { type: String, default: 'Uttar Pradesh' },
   pincode: { type: String, required: true, index: true }, // Index for fast location search
 
-  // Pricing & Services Catalog (Made optional)
+  // Pricing & Services Catalog
+  perKgPrice: { type: Number, required: true }, // <-- Naya field added: Dealer ka per kg shutter price
   pricingDetails: { type: String },
   servicesOffered: { type: String },
 
@@ -31,7 +32,7 @@ const userSchema = new mongoose.Schema({
   pan: { type: String, uppercase: true, trim: true },
   udyamNumber: { type: String },
 
-  // Bank Account Details for Payouts (Made optional since Section 6 is commented out)
+  // Bank Account Details for Payouts
   bankName: { type: String },
   accountNumber: { type: String },
   ifsc: { type: String, uppercase: true, trim: true },

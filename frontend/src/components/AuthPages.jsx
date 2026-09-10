@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Mail, Lock, User, Building2, MapPin, Phone, 
-  FileText, CreditCard, ShieldCheck, Eye, EyeOff, Briefcase, Landmark 
+  FileText, ShieldCheck, Eye, EyeOff, Briefcase, Search, Loader2, IndianRupee 
 } from 'lucide-react';
 
 export function AuthCard({ mode = 'login', onNavigate }) {
@@ -16,7 +16,12 @@ export function AuthCard({ mode = 'login', onNavigate }) {
   const [step, setStep] = useState(mode === 'verify-otp' ? 2 : 1);
   const [otp, setOtp] = useState('');
 
-  // Comprehensive state covering business, location, legal compliance, and payout details
+  // Address search suggestion states
+  const [addressQuery, setAddressQuery] = useState('');
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+
+  // Comprehensive state covering business, location, legal compliance, and pricing details
   const [formData, setFormData] = useState({
     // Personal & Auth Info
     name: '',
@@ -28,21 +33,22 @@ export function AuthCard({ mode = 'login', onNavigate }) {
 
     // Business Profile
     businessName: '',
-    businessType: 'Proprietorship', // Proprietorship, Partnership, Private Limited, etc.
-    category: 'Rolling Shutters & Gates', // Core manufacturing/fabrication domain
+    businessType: 'Proprietorship',
+    category: 'Rolling Shutters & Gates',
     experienceYears: '',
 
-    // Location Details (Crucial for Local Dealer Dashboard Mapping)
+    // Location Details (Mapped via Suggestions for strict matching)
     address: '',
     landmark: '',
-    area: '',           // e.g., Civil Lines
-    city: '',           // e.g., Bareilly
+    area: '',
+    city: '',
     state: 'Uttar Pradesh',
-    pincode: '',        // e.g., 243001
+    pincode: '',
 
     // Pricing & Offerings Info
-    pricingDetails: '', // e.g., Motorized Rolling Shutters @ ₹280/sq ft onwards
-    servicesOffered: '', // e.g., Installation, Repair, Custom Fabrication
+    perKgPrice: '',     // <-- Naya field: Dealer ka per kg shutter price
+    pricingDetails: '', 
+    servicesOffered: '',
 
     // Legal & Tax Compliance
     gstin: '',
@@ -50,7 +56,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
     udyamNumber: '',
     aadhaarOrIdRef: '',
 
-    // Bank Account Details for Payouts / Financials
+    // Bank Account Details (Commented out in UI, kept in state if needed)
     bankName: '',
     accountNumber: '',
     confirmAccountNumber: '',
@@ -73,21 +79,59 @@ export function AuthCard({ mode = 'login', onNavigate }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ============================
-  // UPDATED LOGIN HANDLER
-  // Email OR Mobile Number Login
-  // ============================
+  // Live Address Suggestions using OpenStreetMap Nominatim API
+  useEffect(() => {
+    if (addressQuery.trim().length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingAddress(true);
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=in&addressdetails=1&limit=5`
+        );
+        const data = await response.json();
+        setAddressSuggestions(data);
+      } catch (err) {
+        console.error('Address suggestion error:', err);
+      } finally {
+        setIsSearchingAddress(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [addressQuery]);
+
+  // Handle selection from address suggestion dropdown
+  const handleSelectAddress = (item) => {
+    const addr = item.address || {};
+    const cityVal = addr.city || addr.town || addr.village || addr.state_district || '';
+    const areaVal = addr.suburb || addr.neighbourhood || addr.road || addr.residential || '';
+    const stateVal = addr.state || 'Uttar Pradesh';
+    const pincodeVal = addr.postcode || '';
+
+    setFormData((prev) => ({
+      ...prev,
+      address: item.display_name,
+      area: areaVal || cityVal,
+      city: cityVal,
+      state: stateVal,
+      pincode: pincodeVal
+    }));
+
+    setAddressQuery(item.display_name);
+    setAddressSuggestions([]);
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const loginValue = formData.email.trim();
-
-      // Remove spaces and hyphens from mobile number
       const phoneNumber = loginValue.replace(/[\s-]/g, '');
-
-      // Check whether entered value is a phone number
       const isPhone = /^[+]?[0-9]{10,13}$/.test(phoneNumber);
 
       const response = await fetch('/api/auth/login', {
@@ -95,14 +139,8 @@ export function AuthCard({ mode = 'login', onNavigate }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
           isPhone
-            ? {
-                phone: phoneNumber,
-                password: formData.password
-              }
-            : {
-                email: loginValue,
-                password: formData.password
-              }
+            ? { phone: phoneNumber, password: formData.password }
+            : { email: loginValue, password: formData.password }
         )
       });
 
@@ -127,6 +165,11 @@ export function AuthCard({ mode = 'login', onNavigate }) {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match!');
+      return;
+    }
+
+    if (!formData.city || !formData.pincode) {
+      alert('Please select a valid address from the suggestion list to ensure accurate customer mapping!');
       return;
     }
 
@@ -339,22 +382,54 @@ export function AuthCard({ mode = 'login', onNavigate }) {
               </div>
             </div>
 
-            {/* SECTION 3: Precise Location for Customer Mapping */}
+            {/* SECTION 3: Precise Location with Suggestions for Customer Mapping */}
             <div>
               <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-                <MapPin size={16} /> 3. Workshop Location & Service Area Mapping
+                <MapPin size={16} /> 3. Workshop Location & Service Area Mapping (Select from Suggestions)
               </h3>
               <div className="space-y-4">
+                {/* Autocomplete Address Search Field */}
+                <div className="relative">
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <Search size={18} className="text-amber-500" />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Type shop address / area / city to get suggestions *"
+                      value={addressQuery}
+                      onChange={(e) => {
+                        setAddressQuery(e.target.value);
+                        setFormData({ ...formData, address: e.target.value });
+                      }}
+                      required
+                      className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-10 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                    />
+                    {isSearchingAddress && (
+                      <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-amber-500">
+                        <Loader2 size={16} className="animate-spin" />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Suggestions Dropdown */}
+                  {addressSuggestions.length > 0 && (
+                    <ul className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                      {addressSuggestions.map((item, index) => (
+                        <li
+                          key={index}
+                          onClick={() => handleSelectAddress(item)}
+                          className="px-4 py-3 text-xs sm:text-sm text-slate-200 hover:bg-slate-700 hover:text-amber-400 cursor-pointer border-b border-slate-700/50 last:border-none flex items-start gap-2"
+                        >
+                          <MapPin size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{item.display_name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <textarea
-                    name="address"
-                    placeholder="Complete Shop / Workshop Address *"
-                    value={formData.address}
-                    onChange={handleChange}
-                    required
-                    rows={2}
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-                  />
                   <input
                     type="text"
                     name="landmark"
@@ -363,22 +438,22 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                     onChange={handleChange}
                     className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <input
                     type="text"
                     name="area"
-                    placeholder="Area / Locality * (e.g. Civil Lines)"
+                    placeholder="Area / Locality * (Auto-filled)"
                     value={formData.area}
                     onChange={handleChange}
                     required
                     className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <input
                     type="text"
                     name="city"
-                    placeholder="City * (e.g. Bareilly)"
+                    placeholder="City * (Auto-filled)"
                     value={formData.city}
                     onChange={handleChange}
                     required
@@ -396,7 +471,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                   <input
                     type="text"
                     name="pincode"
-                    placeholder="Pincode * (e.g. 243001)"
+                    placeholder="Pincode * (Auto-filled)"
                     value={formData.pincode}
                     onChange={handleChange}
                     maxLength="6"
@@ -407,16 +482,30 @@ export function AuthCard({ mode = 'login', onNavigate }) {
               </div>
             </div>
 
-            {/* SECTION 4: Pricing & Services for Customer Dashboard */}
+            {/* SECTION 4: Pricing & Services for Customer Dashboard (Naya Per KG Price Field Included) */}
             <div>
               <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
                 <Briefcase size={16} /> 4. Pricing & Services Catalog
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-amber-500">
+                    <IndianRupee size={16} />
+                  </span>
+                  <input
+                    type="number"
+                    name="perKgPrice"
+                    placeholder="Per KG Shutter Price (₹) *"
+                    value={formData.perKgPrice}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-9 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
                 <input
                   type="text"
                   name="pricingDetails"
-                  placeholder="Pricing Highlight (e.g. Rolling Shutters @ ₹250/sq ft)"
+                  placeholder="Pricing Highlight (e.g. @ ₹250/sq ft)"
                   value={formData.pricingDetails}
                   onChange={handleChange}
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
@@ -424,7 +513,7 @@ export function AuthCard({ mode = 'login', onNavigate }) {
                 <input
                   type="text"
                   name="servicesOffered"
-                  placeholder="Services (e.g. Installation, Motor Repair, Sheds)"
+                  placeholder="Services (e.g. Installation, Motor Repair)"
                   value={formData.servicesOffered}
                   onChange={handleChange}
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
@@ -465,68 +554,10 @@ export function AuthCard({ mode = 'login', onNavigate }) {
               </div>
             </div>
 
-            {/* SECTION 6: Bank Account Details for Payouts */}
-            {/* <div>
-              <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Landmark size={16} /> 6. Bank Account Details (For Customer Leads & Payouts)
-              </h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    name="bankName"
-                    placeholder="Bank Name (e.g. State Bank of India) *"
-                    value={formData.bankName}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-                  />
-                  <input
-                    type="text"
-                    name="accountHolderName"
-                    placeholder="Account Holder Name *"
-                    value={formData.accountHolderName}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <input
-                    type="text"
-                    name="accountNumber"
-                    placeholder="Account Number *"
-                    value={formData.accountNumber}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
-                  />
-                  <input
-                    type="text"
-                    name="confirmAccountNumber"
-                    placeholder="Confirm Account Number *"
-                    value={formData.confirmAccountNumber}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
-                  />
-                  <input
-                    type="text"
-                    name="ifsc"
-                    placeholder="IFSC Code * (e.g. SBIN0001234)"
-                    value={formData.ifsc}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 uppercase font-mono"
-                  />
-                </div>
-              </div>
-            </div> */}
-
-            {/* SECTION 7: Passwords & Security */}
+            {/* SECTION 6: Passwords & Security */}
             <div>
               <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-                <ShieldCheck size={16} /> 7. Security Credentials
+                <ShieldCheck size={16} /> 6. Security Credentials
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">

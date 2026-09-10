@@ -28,20 +28,28 @@ app.get('/api/health', (req, res) => {
 // Auth Routes (Register, Verify OTP, Login)
 app.use('/api/auth', authRoutes);
 
-// PUBLIC DEALER SEARCH API (Customer Location Based Search)
+// PUBLIC DEALER SEARCH API (Customer Location/City/Area/Pincode Based Search)
 app.get('/api/dealers/search', async (req, res) => {
   try {
-    const { pincode } = req.query;
+    const { location, city, area, pincode } = req.query;
+    const searchTerm = location || city || area || pincode;
     
-    if (!pincode) {
-      return res.status(400).json({ success: false, message: 'Pincode is required.' });
+    if (!searchTerm) {
+      return res.status(400).json({ success: false, message: 'Location or Pincode is required.' });
     }
 
+    const trimmedSearch = searchTerm.trim();
+    const regexQuery = new RegExp('^' + trimmedSearch + '$', 'i');
+
     const dealers = await User.find({
-      pincode: pincode.trim(),
       role: 'dealer',
-      isVerified: true
-    }).select('companyName name phone address area city pricingDetails gstin');
+      isVerified: true,
+      $or: [
+        { city: regexQuery },
+        { area: regexQuery },
+        { pincode: trimmedSearch }
+      ]
+    }).select('companyName name phone address area city pricingDetails gstin perKgPrice');
 
     return res.status(200).json({
       success: true,
