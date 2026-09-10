@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Phone, User, Home, MapPin, Sun, Moon, Search, Loader2 } from "lucide-react";
+import { Menu, X, Phone, User, Home, MapPin, Sun, Moon, Search, Loader2, Navigation } from "lucide-react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +18,6 @@ export default function Navbar() {
   const [locationQuery, setLocationQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-
 
   // ---------- THEME STATE ----------
   const [theme, setTheme] = useState(() => {
@@ -150,7 +149,7 @@ export default function Navbar() {
 
     const pincode = pincodeInput.trim();
 
-    if (!/^\\d{6}$/.test(pincode)) {
+    if (!/^\d{6}$/.test(pincode)) {
       alert("Please enter a valid 6-digit pincode.");
       return;
     }
@@ -303,7 +302,7 @@ export default function Navbar() {
             <button
               onClick={() => goTo("/")}
               aria-label="Go to Homepage"
-              className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition"
+              className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer"
             >
               <Home size={20} />
             </button>
@@ -323,7 +322,7 @@ export default function Navbar() {
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="ml-auto h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              className="ml-auto h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
             >
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -343,14 +342,15 @@ export default function Navbar() {
               <button
                 onClick={() => goTo("/")}
                 aria-label="Go to Homepage"
-                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition"
+                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer"
               >
                 <Home size={20} />
               </button>
 
               <button
                 onClick={() => setIsLocationModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-200 dark:border-slate-700"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-200 dark:border-slate-700 max-w-[180px] sm:max-w-xs truncate cursor-pointer"
+                title={currentLocationText}
               >
                 <MapPin size={18} className="text-amber-500 shrink-0" />
                 <span className="truncate">{currentLocationText}</span>
@@ -384,7 +384,7 @@ export default function Navbar() {
               <button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
-                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700"
+                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700 cursor-pointer"
               >
                 {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
               </button>
@@ -393,17 +393,17 @@ export default function Navbar() {
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition"
+                  className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition cursor-pointer"
                 >
                   <User size={22} />
                 </button>
 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-3 w-44 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
-                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition">
+                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
                       Dealer Login
                     </button>
-                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-200 dark:border-slate-700">
+                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer">
                       Register Dealer
                     </button>
                   </div>
@@ -413,7 +413,6 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-2">
-              {/* Theme Toggle Button (mobile) */}
               <button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
@@ -421,7 +420,7 @@ export default function Navbar() {
               >
                 {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
               </button>
-              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-700 dark:text-slate-200 p-2">
+              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-700 dark:text-slate-200 p-2 cursor-pointer">
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
               </button>
             </div>
@@ -448,7 +447,7 @@ export default function Navbar() {
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
               <X size={24} />
             </button>
 
@@ -458,28 +457,39 @@ export default function Navbar() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Find Local Dealer</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Enter your pincode to check nearby fabricators</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Use GPS or search by city / pincode</p>
               </div>
             </div>
 
-            <form onSubmit={handleLocationSearch} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider mb-2">
-                  Enter Pincode (e.g. 243001)
-                </label>
-                <input
-                  type="text"
-                  maxLength="6"
-                  value={pincodeInput}
-                  onChange={(e) => setPincodeInput(e.target.value)}
-                  placeholder="Enter 6-digit Pincode"
-                  className="w-full bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono text-lg"
-                  required
-                />
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={handleNativeGPSDetect}
+                disabled={detectingGPS}
+                className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 group shadow-sm cursor-pointer"
+              >
+                {detectingGPS ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin text-amber-500" />
+                    <span>Requesting Browser Access...</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation size={18} className="text-amber-500 group-hover:rotate-45 transition" />
+                    <span>Use My Current Location (GPS)</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center my-1">
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                <span className="px-3 text-xs uppercase tracking-widest text-slate-400 font-semibold">Or Search City</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
               </div>
 
+              {/* City Search Field */}
               <div className="relative">
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">
                   Type City Name
                 </label>
                 <div className="relative">
@@ -491,7 +501,7 @@ export default function Navbar() {
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
                     placeholder="e.g. Bareilly, Rampur, Delhi..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm font-medium focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-50 border border-slate-300 dark:bg-slate-950 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:border-amber-500"
                   />
                   {isSearching && (
                     <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-amber-500">
@@ -501,7 +511,7 @@ export default function Navbar() {
                 </div>
 
                 {suggestions.length > 0 && (
-                  <div className="absolute z-30 mt-2 w-full bg-slate-950 border border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-800">
+                  <div className="absolute z-30 mt-2 w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                     {suggestions.map((item, index) => {
                       const cityName = item.address?.city || item.address?.town || item.address?.village || item.address?.state_district || item.display_name.split(",")[0];
                       const state = item.address?.state || "";
@@ -509,7 +519,7 @@ export default function Navbar() {
                         <button
                           key={index}
                           onClick={() => handleSelectSuggestion(item)}
-                          className="w-full text-left px-4 py-3 text-xs sm:text-sm text-slate-200 hover:bg-slate-800 hover:text-amber-400 transition flex items-center gap-2 cursor-pointer"
+                          className="w-full text-left px-4 py-3 text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-amber-500 transition flex items-center gap-2 cursor-pointer"
                         >
                           <MapPin size={14} className="text-amber-500 shrink-0" />
                           <span className="truncate"><strong>{cityName}</strong>, {state}</span>
@@ -521,10 +531,10 @@ export default function Navbar() {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
               <button
                 onClick={() => setIsLocationModalOpen(false)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
               >
                 Close
               </button>

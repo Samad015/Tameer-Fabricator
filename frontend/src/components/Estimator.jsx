@@ -266,7 +266,7 @@ export default function Estimator() {
                   type="text" 
                   readOnly
                   disabled
-                  value={`₹${PRICE_PER_KG}`}
+                  value={`₹${currentPricePerKg}`}
                   className="w-full bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-xl px-3.5 py-2.5 text-slate-500 dark:text-slate-400 font-bold cursor-not-allowed select-none"
                 />
               </div>
