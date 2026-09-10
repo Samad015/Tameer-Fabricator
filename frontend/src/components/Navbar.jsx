@@ -16,11 +16,58 @@ export default function Navbar() {
   });
   const [detectingGPS, setDetectingGPS] = useState(false);
   
+  // Dealer phone number state with default fallback
+  const [dealerPhone, setDealerPhone] = useState("+918439860719");
+
   const profileRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   const isDealerPage = location.pathname.startsWith("/dealer");
+
+  const getApiBaseUrl = () => {
+    if (import.meta.env.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
+    }
+    return window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+  };
+
+  // Fetch active dealer's phone number based on location
+  const fetchDealerContact = async () => {
+    const selectedLocation = localStorage.getItem('userCity') || localStorage.getItem('userLocationName')?.split(',')[0] || 'Bareilly';
+
+    try {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/dealers/search?location=${encodeURIComponent(selectedLocation)}`);
+      const data = await response.json();
+
+      if (data.success && data.dealers && data.dealers.length > 0) {
+        const activeDealer = data.dealers[0];
+        if (activeDealer.phone) {
+          setDealerPhone(activeDealer.phone);
+        } else {
+          setDealerPhone("+918439860719");
+        }
+      } else {
+        setDealerPhone("+918439860719");
+      }
+    } catch (error) {
+      console.error("Error fetching dealer contact:", error);
+      setDealerPhone("+918439860719");
+    }
+  };
+
+  useEffect(() => {
+    fetchDealerContact();
+
+    window.addEventListener('cityChanged', fetchDealerContact);
+    window.addEventListener('storage', fetchDealerContact);
+
+    return () => {
+      window.removeEventListener('cityChanged', fetchDealerContact);
+      window.removeEventListener('storage', fetchDealerContact);
+    };
+  }, []);
 
   const fetchAddressFromCoords = async (latitude, longitude) => {
     try {
@@ -181,10 +228,10 @@ export default function Navbar() {
       <nav className="bg-slate-900 text-white sticky top-0 z-50 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center gap-4">
-            <button onClick={() => goTo("/")} className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition">
+            <button onClick={() => goTo("/")} className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
               <Home size={20} />
             </button>
-            <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left">
+            <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left cursor-pointer">
               <img src="/images/logo.jpg" alt="Logo" className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md" />
               <div className="flex flex-col">
                 <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">Welcome to</span>
@@ -206,14 +253,14 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => goTo("/")}
-                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition"
+                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer"
               >
                 <Home size={20} />
               </button>
 
               <button
                 onClick={() => setIsLocationModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-800 text-amber-400 hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-700 max-w-[180px] sm:max-w-xs truncate"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-800 text-amber-400 hover:bg-slate-700 text-xs sm:text-sm font-medium transition border border-slate-700 max-w-[180px] sm:max-w-xs truncate cursor-pointer"
                 title={currentLocationText}
               >
                 <MapPin size={18} className="text-amber-500 shrink-0" />
@@ -221,7 +268,7 @@ export default function Navbar() {
               </button>
             </div>
 
-            <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left">
+            <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left cursor-pointer">
               <img src="/images/logo.jpg" alt="Logo" className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md" />
               <div className="flex flex-col">
                 <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">Welcome to</span>
@@ -235,37 +282,57 @@ export default function Navbar() {
               <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="hover:text-amber-500 transition cursor-pointer">About</a>
               <a href="#contact" onClick={(e) => scrollToSection(e, "contact-form")} className="hover:text-amber-500 transition cursor-pointer">Contact</a>
               
-              <a href="tel:+918439860719" className="bg-amber-500 text-slate-950 px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-400 transition">
+              {/* Dynamic Location-Based Call Button */}
+              <a href={`tel:${dealerPhone}`} className="bg-amber-500 text-slate-950 px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-400 transition cursor-pointer">
                 <Phone size={18} /> Call Now
               </a>
 
               <div className="relative" ref={profileRef}>
-                <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition">
+                <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition cursor-pointer">
                   <User size={22} />
                 </button>
 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
-                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition">Dealer Login</button>
-                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700">Register Dealer</button>
+                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">Dealer Login</button>
+                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-700 cursor-pointer">Register Dealer</button>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="md:hidden">
-              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-200 p-2">
+            <div className="md:hidden flex items-center gap-2">
+              <a href={`tel:${dealerPhone}`} className="bg-amber-500 text-slate-950 p-2.5 rounded-full font-bold flex items-center justify-center hover:bg-amber-400 transition">
+                <Phone size={18} />
+              </a>
+              <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-200 p-2 cursor-pointer">
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
               </button>
             </div>
           </div>
         </div>
+
+        {/* Mobile Dropdown */}
+        {isOpen && (
+          <div className="md:hidden bg-slate-950 border-t border-slate-800 px-4 pt-3 pb-6 space-y-3">
+            <a href="#services" onClick={(e) => scrollToSection(e, "services")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Services</a>
+            <a href="#specifications" onClick={(e) => scrollToSection(e, "specifications")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Specifications</a>
+            <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">About</a>
+            <a href="#contact" onClick={(e) => scrollToSection(e, "contact-form")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Contact</a>
+            
+            <div className="pt-2 border-t border-slate-800 flex gap-2">
+              <button onClick={() => goTo("/login")} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg text-sm font-bold text-center">Dealer Login</button>
+              <button onClick={() => goTo("/register")} className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center">Register</button>
+            </div>
+          </div>
+        )}
       </nav>
 
+      {/* Location Modal */}
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+            <button onClick={() => setIsLocationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">
               <X size={24} />
             </button>
 
@@ -284,7 +351,7 @@ export default function Navbar() {
                 type="button"
                 onClick={handleNativeGPSDetect}
                 disabled={detectingGPS}
-                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 group shadow-md"
+                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 group shadow-md cursor-pointer"
               >
                 {detectingGPS ? (
                   <>
@@ -310,38 +377,51 @@ export default function Navbar() {
                   Type City Name
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Search size={18} />
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                    <Search size={16} />
                   </span>
                   <input
                     type="text"
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
-                    placeholder="e.g. Bareilly, Rampur..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm"
+                    placeholder="e.g. Bareilly, Rampur, Delhi..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm font-medium focus:outline-none focus:border-amber-500"
                   />
                   {isSearching && (
-                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-amber-500">
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-amber-500">
                       <Loader2 size={16} className="animate-spin" />
                     </span>
                   )}
                 </div>
 
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                    {suggestions.map((item, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleSelectSuggestion(item)}
-                        className="px-4 py-3 text-xs sm:text-sm text-slate-200 hover:bg-slate-700 hover:text-amber-400 cursor-pointer border-b border-slate-700/50 last:border-none flex items-start gap-2"
-                      >
-                        <MapPin size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                        <span className="line-clamp-1">{item.display_name}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="absolute z-30 mt-2 w-full bg-slate-950 border border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-800">
+                    {suggestions.map((item, index) => {
+                      const cityName = item.address?.city || item.address?.town || item.address?.village || item.address?.state_district || item.display_name.split(",")[0];
+                      const state = item.address?.state || "";
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => handleSelectSuggestion(item)}
+                          className="w-full text-left px-4 py-3 text-xs sm:text-sm text-slate-200 hover:bg-slate-800 hover:text-amber-400 transition flex items-center gap-2 cursor-pointer"
+                        >
+                          <MapPin size={14} className="text-amber-500 shrink-0" />
+                          <span className="truncate"><strong>{cityName}</strong>, {state}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setIsLocationModalOpen(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

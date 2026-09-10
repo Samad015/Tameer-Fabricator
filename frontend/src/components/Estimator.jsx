@@ -18,12 +18,20 @@ export default function Estimator() {
   const [unit, setUnit] = useState('feet');
   const [showUnitPopup, setShowUnitPopup] = useState(false);
 
+  const getApiBaseUrl = () => {
+    if (import.meta.env.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
+    }
+    return window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+  };
+
   const fetchDealerRate = async () => {
     const selectedLocation = localStorage.getItem('userCity') || localStorage.getItem('userLocationName')?.split(',')[0] || 'Bareilly';
 
     setIsLoadingRate(true);
     try {
-      const response = await fetch(`/api/dealers/search?location=${encodeURIComponent(selectedLocation)}`);
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/dealers/search?location=${encodeURIComponent(selectedLocation)}`);
       const data = await response.json();
 
       if (data.success && data.dealers && data.dealers.length > 0) {

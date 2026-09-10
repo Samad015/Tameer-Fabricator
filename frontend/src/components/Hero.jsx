@@ -11,24 +11,24 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative bg-slate-950 text-white min-h-[90vh] flex flex-col justify-between items-center overflow-hidden py-12 px-4">
+    <section className="relative bg-white text-white min-h-[90vh] flex flex-col justify-between items-center  py-12 px-4">
       
       {/* Clear & Fixed Background Image */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src="/images/hero-bg.jpg" 
-          alt="Tameer Fabricators Banner" 
-          className="w-full h-full object-cover object-center"
-        />
+       <img 
+  src="/images/hero-bg.jpg?v=2" 
+  alt="" 
+  className="w-full h-full object-cover object-center"
+/>
         <div className="absolute inset-0 bg-slate-950/25"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-slate-950/40"></div>
       </div>
 
       {/* Main Content Overlay */}
-      <div className="max-w-5xl mx-auto text-center relative z-10 my-auto">
+      <div className="max-w-5xl mx-auto text-left relative z-10 my-auto">
         
         {/* Main Heading */}
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black mb-6 tracking-tight leading-tight text-white drop-shadow-[0_4px_16px_rgba(0,0,0,1)]">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black mb-6 tracking-tight leading-tight text-black ]">
           Heavy-Duty Rolling Shutters & <span className="text-amber-500 drop-shadow-[0_4px_16px_rgba(0,0,0,1)]">Metal Fabrication</span> Built to Protect Your Business
         </h1>
         
