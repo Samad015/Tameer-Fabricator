@@ -14,7 +14,7 @@ import {
 //   Production: VITE_API_BASE_URL=https://tameer-fabricator-backend.onrender.com
 // Falls back to Render URL if the env var is missing.
 // ==========================================
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator-backend.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
 
 // ==========================================
 // 1. LOGIN COMPONENT
