@@ -8,20 +8,16 @@ import Estimator from './components/Estimator';
 import Specifications from './components/Specifications';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
-import LoginPage from './components/LoginPage';
-import SignupPage from './components/SignupPage';
-import VerifyOtp from './components/VerifyOtp';
-import Dashboard from './components/DetailsDashboard'; // <-- Dashboard component import kiya
-import DealerProfile from './components/DealerProfile'; // <-- Dealer page import kiya
+import { AuthCard, LoginPage, SignupPage, VerifyOtp } from './components/AuthPages';
+import DealerDashboard from './components/DealerDashboard';
+import DealerProfile from './components/DealerProfile';
 
 export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white font-sans selection:bg-amber-500 selection:text-slate-950 transition-colors duration-300">
-      {/* Navbar always stays on top */}
       <Navbar />
 
       <Routes>
-        {/* Home Page Route */}
         <Route path="/" element={
           <main>
             <Hero />
@@ -38,14 +34,11 @@ export default function App() {
         <Route path="/register" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
 
-        {/* Dashboard Route */}
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Dealer Profile Route */}
+        {/* Dashboard & Profile Routes */}
+        <Route path="/dashboard" element={<DealerDashboard />} />
         <Route path="/dealer/:dealerId" element={<DealerProfile />} />
       </Routes>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
