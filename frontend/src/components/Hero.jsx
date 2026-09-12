@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { ShieldCheck, Wrench, Clock, Calculator } from 'lucide-react';
+import { ShieldCheck, Wrench, Clock, Calculator, Store } from 'lucide-react';
 
 export default function Hero() {
   const scrollToSection = (e, id) => {
@@ -18,8 +19,8 @@ export default function Hero() {
           alt="Tameer Fabricators Banner"
           className="w-full h-full object-cover object-center"
         />
-       <div className="absolute inset-0 bg-transparent dark:bg-slate-950/25"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent dark:from-slate-950 dark:via-slate-950/10 dark:to-slate-950/40"></div>
+        <div className="absolute inset-0 bg-transparent dark:bg-slate-950/25"></div>
+        <div className="absolute inset-0 bg-linear-to-t from-transparent via-transparent to-transparent dark:from-slate-950 dark:via-slate-950/10 dark:to-slate-950/40"></div>
       </div>
 
       <div className="max-w-5xl mx-auto text-center relative z-10 my-auto">
@@ -32,10 +33,10 @@ export default function Hero() {
         </h1>
 
         <div className="max-w-3xl mx-auto mb-8 space-y-3">
-          <p className="text-base sm:text-lg md:text-xl text-slate-900 dark:text-white font-bold leading-relaxed drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+          <p className="text-base sm:text-lg md:text-xl text-white dark:text-white font-bold leading-relaxed drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
             At Tameer Fabricators, we design, manufacture, and install high-quality rolling shutters and custom steel structures built for maximum security, durability, and smooth daily operation.
           </p>
-          <p className="text-sm sm:text-base text-slate-800 dark:text-slate-100 font-semibold leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+          <p className="text-sm sm:text-base text-white dark:text-white font-semibold leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
             Whether you need commercial rolling shutters, industrial security gates, or specialized metal fabrication, our expert team delivers precision engineering tailored to your site specifications.
           </p>
         </div>
@@ -44,7 +45,7 @@ export default function Hero() {
           <a
             href="#estimator"
             onClick={(e) => scrollToSection(e, 'estimator')}
-            className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black hover:bg-amber-400 transition text-lg flex items-center justify-center gap-2 shadow-2xl shadow-black uppercase tracking-wide cursor-pointer"
+            className="group relative overflow-hidden bg-linear-to-r from-orange-500 via-amber-500 to-yellow-400 text-slate-950 px-8 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-amber-500/40 uppercase tracking-wide cursor-pointer border-2 border-yellow-300/70 animate-pulse hover:animate-none hover:scale-105 hover:shadow-amber-400/70 transition-all duration-300"
           >
             <Calculator size={22} /> Calculate Price
           </a>
@@ -52,9 +53,25 @@ export default function Hero() {
           <a
             href="#contact"
             onClick={(e) => scrollToSection(e, 'contact-form')}
-            className="bg-white/90 dark:bg-slate-950/90 border-2 border-amber-500 px-8 py-4 rounded-xl font-extrabold text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition text-lg flex items-center justify-center gap-2 shadow-2xl shadow-black uppercase tracking-wide cursor-pointer"
+            className="group relative overflow-hidden bg-white from-orange-500 via-amber-500 to-yellow-400 text-slate-950 px-8 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-amber-500/40 uppercase tracking-wide cursor-pointer border-2 border-yellow-300/70 animate-pulse hover:animate-none hover:scale-105 hover:shadow-amber-400/70 transition-all duration-300"
           >
             Request a Free Quote
+          </a>
+
+          {/* START SELLING BUTTON */}
+          <a
+            href="/register"
+            className="group relative overflow-hidden bg-linear-to-r from-orange-500 via-amber-500 to-yellow-400 text-slate-950 px-8 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-amber-500/40 uppercase tracking-wide cursor-pointer border-2 border-yellow-300/70 animate-pulse hover:animate-none hover:scale-105 hover:shadow-amber-400/70 transition-all duration-300"
+          >
+            <span className="absolute inset-0 bg-white/30 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-12"></span>
+
+            <Store size={22} className="relative z-10 group-hover:rotate-12 transition-transform duration-300" />
+
+            <span className="relative z-10">
+              START SELLING
+            </span>
+
+            <span className="absolute top-1 right-2 h-1.5 w-1.5 rounded-full bg-white animate-ping"></span>
           </a>
         </div>
 
@@ -68,7 +85,7 @@ export default function Hero() {
               key={title}
               className="bg-white/90 dark:bg-slate-950/90 backdrop-blur-md p-6 rounded-2xl border border-slate-300/70 dark:border-slate-700/60 shadow-2xl flex items-start gap-4 text-left"
             >
-              <Icon className="text-amber-600 dark:text-amber-500 flex-shrink-0 mt-1" size={32} />
+              <Icon className="text-amber-600 dark:text-amber-500 shrink-0 mt-1" size={32} />
               <div>
                 <h3 className="font-extrabold text-slate-950 dark:text-white text-lg md:text-xl">{title}</h3>
                 <p className="text-slate-700 dark:text-slate-200 text-sm md:text-base mt-1.5 leading-normal">

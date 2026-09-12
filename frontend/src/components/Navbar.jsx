@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Phone, User, Home, MapPin, Sun, Moon, Search, Loader2, Navigation } from "lucide-react";
+import { Menu, X, Phone, User, MapPin, Sun, Moon, Search, Loader2, Navigation } from "lucide-react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -299,14 +299,7 @@ export default function Navbar() {
       <nav className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center gap-4">
-            <button
-              onClick={() => goTo("/")}
-              aria-label="Go to Homepage"
-              className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer"
-            >
-              <Home size={20} />
-            </button>
-            <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left cursor-pointer">
+            <button onClick={() => goTo("/")} aria-label="Go to Homepage" className="flex items-center gap-3 group text-left cursor-pointer">
               <img src="/images/logo.jpg" alt="Logo" className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md" />
               <div className="flex flex-col">
                 <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">
@@ -339,12 +332,16 @@ export default function Navbar() {
           <div className="flex justify-between h-20 items-center">
             
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => goTo("/")}
-                aria-label="Go to Homepage"
-                className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer"
-              >
-                <Home size={20} />
+              <button onClick={() => goTo("/")} aria-label="Go to Homepage" className="flex items-center gap-3 group text-left cursor-pointer">
+                <img src="/images/logo.jpg" alt="Logo" className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">
+                    Welcome to
+                  </span>
+                  <span className="text-lg sm:text-xl font-black tracking-wide uppercase leading-none">
+                    Tameer Fabricator's
+                  </span>
+                </div>
               </button>
 
               <button
@@ -356,18 +353,6 @@ export default function Navbar() {
                 <span className="truncate">{currentLocationText}</span>
               </button>
             </div>
-
-            <button onClick={() => goTo("/")} className="flex items-center gap-3 group text-left cursor-pointer">
-              <img src="/images/logo.jpg" alt="Logo" className="h-14 w-14 object-cover rounded-full border-2 border-amber-500 shadow-md" />
-              <div className="flex flex-col">
-                <span className="text-[10px] sm:text-xs uppercase tracking-widest text-amber-500 font-semibold leading-none mb-1">
-                  Welcome to
-                </span>
-                <span className="text-lg sm:text-xl font-black tracking-wide uppercase leading-none">
-                  Tameer Fabricator's
-                </span>
-              </div>
-            </button>
 
             <div className="hidden md:flex space-x-8 items-center font-medium">
               <a href="#services" onClick={(e) => scrollToSection(e, "services")} className="hover:text-amber-500 transition cursor-pointer">Services</a>
