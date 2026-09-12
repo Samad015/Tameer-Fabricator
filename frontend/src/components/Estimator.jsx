@@ -215,7 +215,7 @@ export default function Estimator() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase">
-                  Width (Feet)
+                  Width ({unit === 'feet' ? 'Feet' : 'Inches'})
                 </label>
                 <input 
                   type="number" 
@@ -230,7 +230,7 @@ export default function Estimator() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase">
-                  Height (Feet)
+                  Height ({unit === 'feet' ? 'Feet' : 'Inches'})
                 </label>
                 <input 
                   type="number" 
