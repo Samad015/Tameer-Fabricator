@@ -13,43 +13,48 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// CORS configuration optimized for Render deployment
 app.use(cors({
   origin: '*', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
 // API Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Backend is running successfully' });
+  res.json({ status: 'OK', message: 'Tameer Backend is running successfully' });
 });
 
-// Auth Routes (Register, Verify OTP, Login)
+// Authentication & Dealer Auth Routes
 app.use('/api/auth', authRoutes);
 
-// PUBLIC DEALER SEARCH API (Customer Location/City/Area/Pincode Based Search)
+// PUBLIC DEALER SEARCH API
 app.get('/api/dealers/search', async (req, res) => {
   try {
     const { location, city, area, pincode } = req.query;
     const searchTerm = location || city || area || pincode;
-    
-    if (!searchTerm) {
-      return res.status(400).json({ success: false, message: 'Location or Pincode is required.' });
-    }
 
-    const trimmedSearch = searchTerm.trim();
-    const regexQuery = new RegExp('^' + trimmedSearch + '$', 'i');
-
-    const dealers = await User.find({
+    const baseFilter = {
       role: 'dealer',
-      isVerified: true,
-      $or: [
+      isSubscribed: true,
+      isProfileComplete: true
+    };
+
+    if (searchTerm) {
+      const trimmedSearch = searchTerm.trim();
+      const regexQuery = new RegExp('^' + trimmedSearch, 'i');
+
+      baseFilter.$or = [
         { city: regexQuery },
         { area: regexQuery },
         { pincode: trimmedSearch }
-      ]
-    }).select('companyName name phone address area city pricingDetails gstin perKgPrice');
+      ];
+    }
+
+    const dealers = await User.find(baseFilter)
+      .select('companyName name phone email address area city pincode perKgPrice pricingDetails servicesOffered gstin experienceYears')
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -62,12 +67,16 @@ app.get('/api/dealers/search', async (req, res) => {
   }
 });
 
-// SINGLE DEALER PROFILE API
+// SINGLE DEALER PROFILE PUBLIC API
 app.get('/api/dealers/:id', async (req, res) => {
   try {
-    const dealer = await User.findById(req.params.id).select('-password');
+    const dealer = await User.findById(req.params.id).select('-password -otp -otpExpires');
     if (!dealer) {
-      return res.status(404).json({ success: false, message: 'Dealer not found.' });
+      return res.status(404).json({ success: false, message: 'Dealer profile not found.' });
+    }
+
+    if (!dealer.isSubscribed) {
+      return res.status(403).json({ success: false, message: 'Dealer subscription is inactive.' });
     }
 
     return res.status(200).json({ success: true, dealer });
@@ -95,7 +104,7 @@ app.post('/api/contact', async (req, res) => {
       to: [{ email: process.env.EMAIL_USER, name: "Admin" }],
       subject: `New Quote Request from ${name}`,
       htmlContent: `
-        <h2>New Project Inquiry - Tameer Fabricator's</h2>
+        <h2>New Project Inquiry - Tameer Fabricators</h2>
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Phone:</strong> ${phone}</p>
         <p><strong>Width:</strong> ${width || 'N/A'} ft</p>
@@ -124,7 +133,7 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Serve Static Frontend Files in Production
+// Serve Static Frontend Files in Production (Render Monorepo or Combined Setup)
 if (process.env.NODE_ENV === 'production') {
   const possiblePaths = [
     path.join(__dirname, '../frontend/dist'),

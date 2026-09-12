@@ -6,24 +6,24 @@ const {
   verifyOtp, 
   login, 
   getProfile, 
-  updateProfile 
+  processSubscription,
+  completeProfile
 } = require('../controllers/authController');
 
-let verifyToken;
-try {
-  verifyToken = require('../middleware/authMiddleware');
-} catch (e) {
-  verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ success: false, message: "No token provided" });
-    next();
-  };
-}
+const verifyToken = require('../middlewares/authMiddleware');
 
-if (typeof register === 'function') router.post('/register', register);
-if (typeof verifyOtp === 'function') router.post('/verify-otp', verifyOtp);
-if (typeof login === 'function') router.post('/login', login);
-if (typeof getProfile === 'function') router.get('/profile', verifyToken, getProfile);
-if (typeof updateProfile === 'function') router.put('/update-profile', verifyToken, updateProfile);
+// Public Authentication Routes
+router.post('/register', register);
+router.post('/verify-otp', verifyOtp);
+router.post('/login', login);
+
+// Protected Dealer & Session Routes
+router.get('/profile', verifyToken, getProfile);
+router.get('/me', verifyToken, getProfile); // Session restoration alias
+router.post('/subscribe', verifyToken, processSubscription); // ₹999/mo subscription handler
+
+// Workshop Profile Complete Handlers (Both PUT and POST bound to avoid 404 routing errors)
+router.put('/complete-profile', verifyToken, completeProfile);
+router.post('/complete-profile', verifyToken, completeProfile);
 
 module.exports = router;

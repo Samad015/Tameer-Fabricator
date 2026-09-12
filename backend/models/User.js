@@ -1,52 +1,64 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  // Personal & Auth Info
-  name: { type: String, required: true },
+  // 1. Personal & Auth Info
+  name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
-  phone: { type: String, required: true },
-  altPhone: { type: String },
+  phone: { type: String, required: true, unique: true, trim: true },
+  altPhone: { type: String, trim: true },
 
-  // Business & Enterprise Profile
-  companyName: { type: String, required: true },
+  // 2. OTP & Verification Status
+  isPhoneVerified: { type: Boolean, default: false },
+  otp: { type: String },
+  otpExpires: { type: Date },
+
+  // 3. Subscription Management (₹999/month tracking)
+  isSubscribed: { type: Boolean, default: false },
+  subscriptionDetails: {
+    planAmount: { type: Number, default: 999 },
+    paymentId: { type: String },
+    orderId: { type: String },
+    paymentMethod: { type: String, default: 'Demo/Razorpay' },
+    subscribedAt: { type: Date },
+    expiresAt: { type: Date }
+  },
+
+  // 4. Workshop & Business Profile (Completed on Step 4)
+  isProfileComplete: { type: Boolean, default: false },
+  companyName: { type: String, trim: true },
   businessType: { type: String, default: 'Proprietorship' },
   category: { type: String, default: 'Rolling Shutters & Gates' },
   experienceYears: { type: String },
 
-  // Location Details (For Customer Search & Dashboard Mapping)
-  address: { type: String, required: true },
+  // 5. Location Details (Indexed for Fast Customer Matching)
+  address: { type: String },
   landmark: { type: String },
-  area: { type: String, required: true },
-  city: { type: String, required: true, index: true }, // Index added for fast city matching
+  area: { type: String },
+  city: { type: String, index: true },
   state: { type: String, default: 'Uttar Pradesh' },
-  pincode: { type: String, required: true, index: true }, // Index for fast location search
+  pincode: { type: String, index: true },
 
-  // Pricing & Services Catalog
-  perKgPrice: { type: Number, required: true }, // <-- Naya field added: Dealer ka per kg shutter price
+  // 6. Pricing & Services Catalog
+  perKgPrice: { type: Number }, // Dealer per-kg rate
   pricingDetails: { type: String },
   servicesOffered: { type: String },
 
-  // Legal & Tax Compliance (PAN and GSTIN made optional or adjusted)
+  // 7. Legal & Tax Compliance
   gstin: { type: String, uppercase: true, trim: true },
   pan: { type: String, uppercase: true, trim: true },
-  udyamNumber: { type: String },
+  udyamNumber: { type: String, trim: true },
 
-  // Bank Account Details for Payouts
+  // 8. Bank Account Details for Payouts
   bankName: { type: String },
   accountNumber: { type: String },
   ifsc: { type: String, uppercase: true, trim: true },
   accountHolderName: { type: String },
 
-  // Role & Verification Status
+  // 9. Role & Admin Flags
   role: { type: String, enum: ['dealer', 'customer', 'admin'], default: 'dealer' },
   isCorporate: { type: Boolean, default: false },
-  isVerified: { type: Boolean, default: false }, // Admin verification
-  isSubscriptionActive: { type: Boolean, default: false }, // Payment/Subscription status
-
-  // OTP Verification Fields
-  otp: { type: String },
-  otpExpires: { type: Date }
+  isVerified: { type: Boolean, default: false } // Admin verification status
 
 }, { timestamps: true });
 

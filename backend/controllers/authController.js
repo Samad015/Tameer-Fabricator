@@ -2,105 +2,99 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// 1. Register Controller
+// Helper: JWT Generator (30 Days Validity)
+const generateToken = (id, email) => {
+  return jwt.sign(
+    { id, email }, 
+    process.env.JWT_SECRET || 'tameer_secret_key_123', 
+    { expiresIn: '30d' }
+  );
+};
+
+// 1. REGISTER CONTROLLER
 exports.register = async (req, res) => {
   try {
-    const {
-      name, email, password, phone, altPhone,
-      companyName, businessType, category, experienceYears,
-      address, landmark, area, city, state, pincode,
-      perKgPrice,
-      pricingDetails, servicesOffered,
-      gstin, pan, udyamNumber,
-      bankName, accountNumber, ifsc, accountHolderName,
-      isCorporate, role
-    } = req.body;
+    const { name, email, password, phone } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'Email is already registered.' });
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ success: false, message: 'All fields (name, email, phone, password) are required.' });
     }
 
-    // Hash password securely
+    let existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    
+    if (existingUser && existingUser.isVerified) {
+      return res.status(400).json({ success: false, message: 'Email or Phone is already registered and verified.' });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Create new user with all fields from req.body
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      phone,
-      altPhone,
-      companyName: companyName || req.body.businessName,
-      businessType,
-      category,
-      experienceYears,
-      address,
-      landmark,
-      area,
-      city,
-      state: state || 'Uttar Pradesh',
-      pincode,
-      perKgPrice: perKgPrice ? Number(perKgPrice) : 0, // Safe conversion to Number
-      pricingDetails,
-      servicesOffered,
-      gstin,
-      pan,
-      udyamNumber,
-      bankName,
-      accountNumber,
-      ifsc,
-      accountHolderName,
-      role: role || 'dealer',
-      isCorporate: isCorporate || false,
-      otp,
-      otpExpires
-    });
-
-    await newUser.save();
-
-    // Send OTP via Brevo API
-    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
-      const emailData = {
-        sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
-        to: [{ email: email, name: name }],
-        subject: "Your OTP for Tameer Fabricators Registration",
-        htmlContent: `
-          <h2>Welcome to Tameer Fabricators!</h2>
-          <p>Hello ${name},</p>
-          <p>Your OTP for account verification is:</p>
-          <h1 style="color: #2563eb;">${otp}</h1>
-          <p>This OTP is valid for 10 minutes.</p>
-        `,
-      };
-
-      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'api-key': process.env.BREVO_API_KEY,
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      const brevoData = await brevoRes.json();
-      if (!brevoRes.ok) {
-        console.error('Brevo Email Error:', brevoData);
-      }
+    if (existingUser && !existingUser.isVerified) {
+      existingUser.name = name;
+      existingUser.email = email;
+      existingUser.phone = phone;
+      existingUser.password = hashedPassword;
+      existingUser.otp = otp;
+      existingUser.otpExpires = otpExpires;
+      await existingUser.save();
     } else {
-      console.warn('Brevo API key or EMAIL_USER missing in environment variables.');
+      existingUser = new User({
+        name,
+        email,
+        phone,
+        password: hashedPassword,
+        otp,
+        otpExpires,
+        isVerified: false,
+        isPhoneVerified: false,
+        isSubscribed: false,
+        isProfileComplete: false
+      });
+      await existingUser.save();
+    }
+
+    console.log(`\n========================================`);
+    console.log(`[DEMO OTP for ${phone} / ${email}]: ${otp}`);
+    console.log(`========================================\n`);
+
+    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
+      try {
+        const emailData = {
+          sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
+          to: [{ email: email, name: name }],
+          subject: "Your Verification OTP - Tameer Fabricators",
+          htmlContent: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff;">
+              <h2 style="color: #f59e0b;">Tameer Fabricators Partner Verification</h2>
+              <p>Hello ${name},</p>
+              <p>Your OTP for account verification is:</p>
+              <h1 style="color: #f59e0b; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+              <p>This OTP is valid for 10 minutes.</p>
+            </div>
+          `,
+        };
+
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+          },
+          body: JSON.stringify(emailData),
+        });
+      } catch (emailErr) {
+        console.error('Brevo Email Delivery Failed:', emailErr.message);
+      }
     }
 
     return res.status(200).json({ 
       success: true, 
-      message: 'Registration successful! OTP sent to your email.' 
+      message: 'Registration successful! OTP sent to your email/phone.',
+      demoOtp: otp 
     });
 
   } catch (error) {
@@ -109,18 +103,16 @@ exports.register = async (req, res) => {
   }
 };
 
-// 2. Verify OTP Controller
+// 2. VERIFY OTP CONTROLLER
 exports.verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, phone, otp } = req.body;
 
-    const user = await User.findOne({ email });
+    const query = email ? { email } : { phone };
+    const user = await User.findOne(query);
+
     if (!user) {
-      return res.status(400).json({ success: false, message: 'User not found.' });
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ success: false, message: 'User is already verified.' });
+      return res.status(400).json({ success: false, message: 'User account not found.' });
     }
 
     if (user.otp !== otp || user.otpExpires < Date.now()) {
@@ -128,11 +120,26 @@ exports.verifyOtp = async (req, res) => {
     }
 
     user.isVerified = true;
+    user.isPhoneVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
 
-    return res.status(200).json({ success: true, message: 'Account verified successfully!' });
+    const token = generateToken(user._id, user.email);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Account verified successfully!',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        isSubscribed: user.isSubscribed,
+        isProfileComplete: user.isProfileComplete
+      }
+    });
 
   } catch (error) {
     console.error('Verify OTP Error:', error.message);
@@ -140,7 +147,106 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
-// 3. Login Controller
+// 3. PROCESS SUBSCRIPTION CONTROLLER
+exports.processSubscription = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const { paymentId, orderId, paymentMethod } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const subscribedAt = new Date();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    user.isSubscribed = true;
+    user.subscriptionDetails = {
+      planAmount: 999,
+      paymentId: paymentId || `DEMO_PAY_${Date.now()}`,
+      orderId: orderId || `DEMO_ORD_${Date.now()}`,
+      paymentMethod: paymentMethod || 'Demo/Razorpay Modal',
+      subscribedAt,
+      expiresAt
+    };
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription activated successfully for 30 days!',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isSubscribed: user.isSubscribed,
+        isProfileComplete: user.isProfileComplete,
+        subscriptionDetails: user.subscriptionDetails
+      }
+    });
+
+  } catch (error) {
+    console.error('Subscription Error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to activate subscription' });
+  }
+};
+
+// 4. COMPLETE DEALER PROFILE CONTROLLER
+exports.completeProfile = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+
+    const {
+      companyName, businessName, businessType, category, experienceYears,
+      address, landmark, area, city, state, pincode,
+      perKgPrice, pricingDetails, pricingHighlight, servicesOffered, services,
+      gstin, pan, udyamNumber
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Update Profile Fields with Frontend Alias Fallbacks
+    user.companyName = companyName || businessName || user.companyName || user.name;
+    user.businessType = businessType || user.businessType;
+    user.category = category || user.category;
+    user.experienceYears = experienceYears ? String(experienceYears) : user.experienceYears;
+    user.address = address || user.address;
+    user.landmark = landmark || user.landmark;
+    user.area = area || user.area;
+    user.city = city || user.city;
+    user.state = state || user.state || 'Uttar Pradesh';
+    user.pincode = pincode || user.pincode;
+    user.perKgPrice = perKgPrice ? Number(perKgPrice) : user.perKgPrice;
+    user.pricingDetails = pricingDetails || pricingHighlight || user.pricingDetails;
+    user.servicesOffered = servicesOffered || services || user.servicesOffered;
+    user.gstin = gstin || user.gstin;
+    user.pan = pan || user.pan;
+    user.udyamNumber = udyamNumber || user.udyamNumber;
+
+    user.isProfileComplete = true;
+    await user.save();
+
+    const sanitizedUser = user.toObject();
+    delete sanitizedUser.password;
+    delete sanitizedUser.otp;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Dealer workshop profile completed successfully!',
+      user: sanitizedUser
+    });
+
+  } catch (error) {
+    console.error('Complete Profile Error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error while updating profile' });
+  }
+};
+
+// 5. LOGIN CONTROLLER
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -159,11 +265,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid email or password.' });
     }
 
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = generateToken(user._id, user.email);
 
     return res.status(200).json({ 
       success: true, 
@@ -173,7 +275,9 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name, 
         email: user.email, 
-        companyName: user.companyName 
+        companyName: user.companyName,
+        isSubscribed: user.isSubscribed,
+        isProfileComplete: user.isProfileComplete
       } 
     });
 
@@ -183,22 +287,14 @@ exports.login = async (req, res) => {
   }
 };
 
-// 4. Get Profile Controller
+// 6. GET ME / GET PROFILE CONTROLLER
 exports.getProfile = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, message: 'No token provided, authorization denied' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await User.findById(decoded.id).select('-password');
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId).select('-password -otp');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found in database' });
     }
-
     return res.status(200).json({ success: true, user });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
