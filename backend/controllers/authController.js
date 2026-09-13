@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Lead = require('../models/Lead');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -298,5 +299,64 @@ exports.getProfile = async (req, res) => {
     return res.status(200).json({ success: true, user });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 7. UPDATE PER KG PRICE CONTROLLER (Dealer Self-Service)
+exports.updatePrice = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const { perKgPrice } = req.body;
+
+    if (perKgPrice === undefined || perKgPrice === null || perKgPrice === '') {
+      return res.status(400).json({ success: false, message: 'Per KG price is required.' });
+    }
+
+    const numericPrice = Number(perKgPrice);
+    if (isNaN(numericPrice) || numericPrice <= 0) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid positive price.' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    user.perKgPrice = numericPrice;
+    await user.save();
+
+    const sanitizedUser = user.toObject();
+    delete sanitizedUser.password;
+    delete sanitizedUser.otp;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Price updated successfully!',
+      user: sanitizedUser
+    });
+
+  } catch (error) {
+    console.error('Update Price Error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error while updating price' });
+  }
+};
+
+// 8. GET MY LEADS CONTROLLER (Dealer Notifications)
+exports.getMyLeads = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+
+    const leads = await Lead.find({ dealer: userId }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: leads.length,
+      unreadCount: leads.filter((lead) => !lead.isRead).length,
+      leads
+    });
+
+  } catch (error) {
+    console.error('Get My Leads Error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error while fetching leads' });
   }
 };

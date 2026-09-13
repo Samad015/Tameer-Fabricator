@@ -7,6 +7,7 @@ require('dotenv').config();
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const User = require('./models/User'); // User / Dealer Model
+const Lead = require('./models/Lead'); // Customer Lead / Inquiry Model
 
 connectDB();
 
@@ -86,50 +87,68 @@ app.get('/api/dealers/:id', async (req, res) => {
   }
 });
 
-// Contact / Quote Request Route
+// Contact / Quote Request Route (Saves Lead to DB + Sends Email Notification)
 app.post('/api/contact', async (req, res) => {
-  const { name, phone, width, height, message } = req.body;
-  
+  const { name, phone, width, height, unit, shutterType, message, dealerId, dealerName, dealerEmail } = req.body;
+
   if (!name || !phone) {
     return res.status(400).json({ success: false, message: 'Name and Phone are required.' });
   }
 
-  if (!process.env.BREVO_API_KEY) {
-    return res.status(500).json({ success: false, message: 'Server configuration error: Brevo API key missing.' });
+  if (!dealerId) {
+    return res.status(400).json({ success: false, message: 'Dealer reference is missing. Cannot route this lead.' });
   }
 
   try {
-    const emailData = {
-      sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
-      to: [{ email: process.env.EMAIL_USER, name: "Admin" }],
-      subject: `New Quote Request from ${name}`,
-      htmlContent: `
-        <h2>New Project Inquiry - Tameer Fabricators</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Width:</strong> ${width || 'N/A'} ft</p>
-        <p><strong>Height:</strong> ${height || 'N/A'} ft</p>
-        <p><strong>Requirements:</strong> ${message || 'N/A'}</p>
-      `,
-    };
-
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': process.env.BREVO_API_KEY,
-      },
-      body: JSON.stringify(emailData),
+    // 1. Save Lead to Database (linked to dealer)
+    const newLead = new Lead({
+      dealer: dealerId,
+      name,
+      phone,
+      width: width || '',
+      height: height || '',
+      unit: unit || 'Feet',
+      shutterType: shutterType || 'Manual',
+      message: message || ''
     });
+    await newLead.save();
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Failed to send email via Brevo API');
+    // 2. Send Email Notification via Brevo (Non-blocking for the lead save itself)
+    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
+      try {
+        const emailData = {
+          sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
+          to: [{ email: dealerEmail || process.env.EMAIL_USER, name: dealerName || "Dealer" }],
+          subject: `New Quote Request from ${name}`,
+          htmlContent: `
+            <h2>New Project Inquiry - Tameer Fabricators</h2>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Phone:</strong> ${phone}</p>
+            <p><strong>Width:</strong> ${width || 'N/A'} ${unit || ''}</p>
+            <p><strong>Height:</strong> ${height || 'N/A'} ${unit || ''}</p>
+            <p><strong>Shutter Type:</strong> ${shutterType || 'N/A'}</p>
+            <p><strong>Requirements:</strong> ${message || 'N/A'}</p>
+          `,
+        };
+
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+          },
+          body: JSON.stringify(emailData),
+        });
+      } catch (emailErr) {
+        console.error('Brevo Email Delivery Failed (Lead was still saved):', emailErr.message);
+      }
+    }
 
     return res.status(200).json({ success: true, message: 'Quote request submitted successfully!' });
   } catch (error) {
-    console.error('Email Error:', error.message || error);
-    return res.status(500).json({ success: false, message: 'Failed to send email.' });
+    console.error('Contact/Lead Save Error:', error.message || error);
+    return res.status(500).json({ success: false, message: 'Failed to submit quote request.' });
   }
 });
 

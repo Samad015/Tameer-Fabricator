@@ -343,7 +343,7 @@ function Estimator({ dealerRate = 95 }) {
   );
 }
 
-function ContactForm({ dealerName = "", dealerEmail = "" }) {
+function ContactForm({ dealerId, dealerName = "", dealerEmail = "" }) {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -377,6 +377,14 @@ function ContactForm({ dealerName = "", dealerEmail = "" }) {
       return;
     }
 
+    if (!dealerId) {
+      setStatus({
+        type: "error",
+        message: "Unable to identify the dealer. Please refresh and try again.",
+      });
+      return;
+    }
+
     setLoading(true);
     setStatus({ type: null, message: "" });
 
@@ -386,6 +394,7 @@ function ContactForm({ dealerName = "", dealerEmail = "" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          dealerId,
           dealerName,
           dealerEmail,
         }),
@@ -499,7 +508,7 @@ function ContactForm({ dealerName = "", dealerEmail = "" }) {
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-xs font-bold text-slate-700 mb-1">Unit</label>
             <button
               type="button"
@@ -510,7 +519,7 @@ function ContactForm({ dealerName = "", dealerEmail = "" }) {
               <ChevronDown size={14} className="text-slate-400" />
             </button>
             {showUnitPopup && (
-              <div className="absolute z-20 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+              <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
                 {["Feet", "Inches"].map((u) => (
                   <button
                     key={u}
@@ -702,7 +711,7 @@ export default function DealerProfile() {
 
       {/* Quote Form */}
       <section className="py-16 bg-white border-t border-slate-200">
-        <ContactForm dealerName={dealer.companyName} dealerEmail={dealer.email} />
+        <ContactForm dealerId={dealer._id} dealerName={dealer.companyName} dealerEmail={dealer.email} />
       </section>
     </main>
   );

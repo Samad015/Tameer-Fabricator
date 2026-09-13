@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Phone, User, MapPin, Sun, Moon, Search, Loader2, Navigation } from "lucide-react";
+import { Menu, X, Phone, User, MapPin, Sun, Moon, Search, Loader2, Navigation, Building2 } from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Navbar() {
+  const { user, logout } = useContext(AuthContext);
+
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -52,7 +55,7 @@ export default function Navbar() {
     if (import.meta.env.VITE_API_URL) {
       return import.meta.env.VITE_API_URL;
     }
-    return window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+    return window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'https://tameer-fabricator-backend.onrender.com';
   };
 
   // Fetch active dealer's phone number based on location
@@ -143,54 +146,6 @@ export default function Navbar() {
       );
     }
   }, []);
-
-  const handleLocationSearch = async (e) => {
-    e.preventDefault();
-
-    const pincode = pincodeInput.trim();
-
-    if (!/^\d{6}$/.test(pincode)) {
-      alert("Please enter a valid 6-digit pincode.");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.postalpincode.in/pincode/${pincode}`
-      );
-      const data = await response.json();
-
-      if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length) {
-        const office = data[0].PostOffice[0];
-        const city = office.District || office.Block || office.Name || "Bareilly";
-        let stateName = office.State || "";
-
-        if (stateName.toLowerCase().includes("uttar pradesh")) {
-          stateName = "UP";
-        } else if (stateName.toLowerCase().includes("uttarakhand")) {
-          stateName = "UK";
-        } else {
-          stateName = stateName
-            ? stateName.substring(0, 2).toUpperCase()
-            : "";
-        }
-
-        const locationString = `${city}, ${stateName}`;
-        localStorage.setItem("userLocationName", locationString);
-        localStorage.setItem("userCity", city);
-        window.dispatchEvent(new Event("cityChanged"));
-
-        setCurrentLocationText(locationString);
-        setIsLocationModalOpen(false);
-        setPincodeInput("");
-      } else {
-        alert("No location found for this pincode.");
-      }
-    } catch (error) {
-      console.error("Pincode search error:", error);
-      alert("Unable to search this pincode. Please try again.");
-    }
-  };
 
   const handleNativeGPSDetect = () => {
     if (!navigator.geolocation) {
@@ -379,18 +334,36 @@ export default function Navbar() {
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition cursor-pointer"
+                  title={user ? (user.companyName || user.name) : "Dealer Login"}
                 >
-                  <User size={22} />
+                  <User size={22} className={user ? "text-amber-500" : ""} />
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-3 w-44 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
-                    <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
-                      Dealer Login
-                    </button>
-                    <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer">
-                      Register Dealer
-                    </button>
+                  <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
+                    {user ? (
+                      <>
+                        <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 text-xs">
+                          <span className="block text-slate-400">Signed in as</span>
+                          <span className="font-bold text-slate-900 dark:text-white truncate">{user.companyName || user.name}</span>
+                        </div>
+                        <button onClick={() => goTo("/my-workshop")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
+                          My Workshop Portal
+                        </button>
+                        <button onClick={() => { logout(); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-3 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer">
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
+                          Dealer Login
+                        </button>
+                        <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer">
+                          Register Dealer
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -420,9 +393,18 @@ export default function Navbar() {
             <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">About</a>
             <a href="#contact" onClick={(e) => scrollToSection(e, "contact-form")} className="block py-2 text-slate-300 hover:text-amber-500 font-medium">Contact</a>
             
-            <div className="pt-2 border-t border-slate-800 flex gap-2">
-              <button onClick={() => goTo("/login")} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg text-sm font-bold text-center">Dealer Login</button>
-              <button onClick={() => goTo("/register")} className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center">Register</button>
+            <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+              {user ? (
+                <>
+                  <button onClick={() => goTo("/my-workshop")} className="w-full bg-amber-500 text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center">My Workshop Portal</button>
+                  <button onClick={() => { logout(); setIsOpen(false); }} className="w-full bg-red-600/20 text-red-400 hover:bg-red-600/30 py-2.5 rounded-lg text-sm font-bold text-center">Logout</button>
+                </>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => goTo("/login")} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg text-sm font-bold text-center">Dealer Login</button>
+                  <button onClick={() => goTo("/register")} className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center">Register</button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -442,7 +424,7 @@ export default function Navbar() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Find Local Dealer</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Use GPS or search by city / pincode</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Use GPS or search by city</p>
               </div>
             </div>
 

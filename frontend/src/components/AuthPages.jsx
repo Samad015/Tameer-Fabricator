@@ -7,14 +7,8 @@ import {
   CheckCircle, CreditCard, Sparkles, ArrowRight
 } from 'lucide-react';
 
-// ==========================================
-// GLOBAL API BASE URL (single source of truth)
-// Set VITE_API_BASE_URL in your frontend .env file:
-//   Local dev:  VITE_API_BASE_URL=http://localhost:5001
-//   Production: VITE_API_BASE_URL=https://tameer-fabricator-backend.onrender.com
-// Falls back to Render URL if the env var is missing.
-// ==========================================
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator-backend.onrender.com';
 
 // ==========================================
 // 1. LOGIN COMPONENT
@@ -55,7 +49,7 @@ export function LoginPage() {
         } else if (!data.user.isProfileComplete) {
           navigate('/complete-profile');
         } else {
-          navigate('/dashboard');
+          navigate('/my-workshop');
         }
       } else {
         alert(data.message || 'Login failed. Please check credentials.');
@@ -481,7 +475,7 @@ export function CompleteProfilePage() {
       if (data.success) {
         alert('Workshop profile completed and published!');
         await fetchUserSession();
-        navigate('/dashboard');
+        navigate('/my-workshop');
       } else {
         alert(data.message || 'Failed to complete profile.');
       }
