@@ -52,6 +52,7 @@ export default function Navbar() {
   const profileRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useContext(AuthContext);
 
   const isDealerPage = location.pathname.startsWith("/dealer");
 
