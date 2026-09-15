@@ -14,15 +14,15 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// CORS configuration optimized for Render deployment & Preflight handling
+// CORS configuration optimized for Render deployment
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Explicitly handle preflight OPTIONS requests for all routes to prevent CORS blocks
-app.options('*', cors());
+// Fix for Express v5 / path-to-regexp wildcard preflight routing
+app.options(/.*/, cors());
 
 app.use(express.json());
 
