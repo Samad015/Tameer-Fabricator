@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, FileText, Hand, Building, Ruler, ChevronDown, MapPin, Loader2 } from 'lucide-react';
 
 export default function Estimator() {
+  const navigate = useNavigate();
   const DEFAULT_PRICE_PER_KG = 95; 
   const INCHES_TO_FEET = 1 / 12;
 
@@ -49,6 +51,7 @@ export default function Estimator() {
     } catch (error) {
       console.error('Error fetching dealer pricing:', error);
       setCurrentPricePerKg(DEFAULT_PRICE_PER_KG);
+      setDealerInfo(null);
       setRateSourceMessage('Standard Default Rate (Network Fallback)');
     } finally {
       setIsLoadingRate(false);
@@ -90,6 +93,17 @@ export default function Estimator() {
       estimatedPrice: price,
       appliedRate: currentPricePerKg,
     });
+  };
+
+  // Navigate to the matched local dealer's profile page.
+  // If no dealer was found for the customer's location, send them
+  // to the dealer search/dashboard page so they can find one manually.
+  const handleOrderCustomShutter = () => {
+    if (dealerInfo && dealerInfo._id) {
+      navigate(`/dealer/${dealerInfo._id}`);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const shutterCost = result ? result.estimatedPrice : 0;
@@ -321,12 +335,13 @@ export default function Estimator() {
                   <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">*Included GST & installation charges basic rate</span>
                 </div>
 
-                <a 
-                  href="#contact-form" 
-                  className="inline-flex items-center justify-center gap-2 w-full bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-900 dark:text-white font-bold py-3 rounded-xl transition text-xs uppercase tracking-wider border border-slate-300 dark:border-slate-700"
+                <button
+                  type="button"
+                  onClick={handleOrderCustomShutter}
+                  className="inline-flex items-center justify-center gap-2 w-full bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-900 dark:text-white font-bold py-3 rounded-xl transition text-xs uppercase tracking-wider border border-slate-300 dark:border-slate-700 cursor-pointer"
                 >
-                  Order Custom Shutter <ArrowRight size={16} />
-                </a>
+                  {dealerInfo ? `Order from ${dealerInfo.companyName || dealerInfo.name}` : 'Find a Local Dealer'} <ArrowRight size={16} />
+                </button>
               </div>
             ) : (
               <div className="my-auto py-10 text-slate-500 text-sm space-y-2">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
 import Navbar from './components/Navbar';
@@ -14,7 +14,7 @@ import Footer from './components/Footer';
 import { AuthCard, LoginPage, SignupPage, VerifyOtp, CompleteProfilePage } from './components/AuthPages';
 import DealerDashboard from './components/DealerSearch';
 import DealerProfile from './components/DealerDetail';
-import MyWorkshop from './components/MyWorkshop'; // Workshop profile page
+import MyWorkshop from './components/MyWorkshop';
 
 export default function App() {
   return (
@@ -40,15 +40,12 @@ export default function App() {
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
-          {/* Dedicated Dealer Workshop Profile Page */}
+          {/* Dealer's Own Profile (Requires Login) */}
           <Route path="/my-workshop" element={<MyWorkshop />} />
 
-          {/* Public Customer View Routes (Optional general search) */}
-          <Route path="/search-dealers" element={<DealerDashboard />} />
+          {/* Public & Customer View Routes */}
+          <Route path="/dashboard" element={<DealerDashboard />} />
           <Route path="/dealer/:dealerId" element={<DealerProfile />} />
-
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
         <Footer />

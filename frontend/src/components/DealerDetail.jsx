@@ -7,6 +7,19 @@ import {
 } from "lucide-react";
 
 const HERO_IMAGE = "/images/dealer-hero.jpeg";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
+
+// Fire-and-forget: notifies admin that a customer engaged with a dealer's
+// Call/WhatsApp button. Never awaited by the caller and never blocks the
+// actual tel:/wa.me navigation - failures are silently ignored here.
+const notifyDealerClick = (dealerId, dealerName, actionType) => {
+  if (!dealerId) return;
+  fetch(`${API_BASE}/api/notify-click`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dealerId, dealerName, actionType })
+  }).catch(() => {});
+};
 
 function Estimator({ dealerRate = 95 }) {
   // Dynamic or fallback rate per kg
@@ -389,7 +402,7 @@ function ContactForm({ dealerId, dealerName = "", dealerEmail = "" }) {
     setStatus({ type: null, message: "" });
 
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch(`${API_BASE}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -585,7 +598,7 @@ export default function DealerProfile() {
   useEffect(() => {
     const fetchDealerProfile = async () => {
       try {
-        const res = await fetch(`/api/dealers/${dealerId}`);
+        const res = await fetch(`${API_BASE}/api/dealers/${dealerId}`);
         const data = await res.json();
         if (data.success) {
           setDealer(data.dealer);
@@ -688,7 +701,8 @@ export default function DealerProfile() {
         {/* Primary Contact Actions */}
         <div className="flex flex-wrap justify-center gap-3 mt-6">
           <a 
-            href={`tel:${dealer.phone}`} 
+            href={`tel:${dealer.phone}`}
+            onClick={() => notifyDealerClick(dealer._id, dealer.companyName, 'call')}
             className="inline-flex items-center gap-2 bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-extrabold hover:bg-amber-400 transition text-sm shadow-md"
           >
             <Phone size={16} /> Direct Call: {dealer.phone}
@@ -697,7 +711,8 @@ export default function DealerProfile() {
             <a 
               href={whatsappUrl} 
               target="_blank" 
-              rel="noopener noreferrer" 
+              rel="noopener noreferrer"
+              onClick={() => notifyDealerClick(dealer._id, dealer.companyName, 'whatsapp')}
               className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-extrabold hover:bg-emerald-500 transition text-sm shadow-md"
             >
               <MessageCircle size={16} /> WhatsApp Inquiry

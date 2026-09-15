@@ -5,6 +5,20 @@ import {
   Search, IndianRupee, Sparkles, Award, Loader2 
 } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
+
+// Fire-and-forget: notifies admin that a customer engaged with a dealer's
+// Call button. Never awaited by the caller and never blocks the tel:
+// navigation - failures are silently ignored here.
+const notifyDealerClick = (dealerId, dealerName, actionType) => {
+  if (!dealerId) return;
+  fetch(`${API_BASE}/api/notify-click`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dealerId, dealerName, actionType })
+  }).catch(() => {});
+};
+
 export default function DealerDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -24,8 +38,8 @@ export default function DealerDashboard() {
     setLoading(true);
     try {
       const endpoint = query 
-        ? `/api/dealers/search?location=${encodeURIComponent(query)}`
-        : `/api/dealers/search`;
+        ? `${API_BASE}/api/dealers/search?location=${encodeURIComponent(query)}`
+        : `${API_BASE}/api/dealers/search`;
 
       const res = await fetch(endpoint);
       const data = await res.json();
@@ -173,6 +187,7 @@ export default function DealerDashboard() {
                   </Link>
                   <a
                     href={`tel:${dealer.phone}`}
+                    onClick={() => notifyDealerClick(dealer._id, dealer.companyName, 'call')}
                     className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg text-sm"
                   >
                     <Phone size={16} /> Direct Call: {dealer.phone}
