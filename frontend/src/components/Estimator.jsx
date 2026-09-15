@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, FileText, Hand, Building, Ruler, ChevronDown, MapPin, Loader2 } from 'lucide-react';
+import { Calculator, ArrowRight, IndianRupee, RefreshCw, Lock, FileText, Hand, Building, Ruler, ChevronDown, MapPin, Loader2,Cog } from 'lucide-react';
 
 export default function Estimator() {
   const DEFAULT_PRICE_PER_KG = 95; 
@@ -156,7 +156,7 @@ export default function Estimator() {
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Building size={16} /> Gear 
+                  <Cog size={16} /> Gear 
                 </button>
                 <button
                   type="button"

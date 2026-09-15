@@ -66,10 +66,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
-        <h2 className="text-3xl font-bold text-white text-center mb-2">Dealer Portal Login</h2>
-        <p className="text-center text-slate-400 text-sm mb-8">Access your workshop dashboard & customer leads</p>
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-white flex items-center justify-center p-4 py-12">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-8 dark:bg-slate-900 dark:border-slate-800">
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-2">Dealer Portal Login</h2>
+        <p className="text-center text-slate-600 dark:text-slate-400 text-sm mb-8">Access your workshop dashboard & customer leads</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="relative">
@@ -80,7 +80,7 @@ export function LoginPage() {
               value={formData.emailOrPhone}
               onChange={(e) => setFormData({ ...formData, emailOrPhone: e.target.value })}
               required
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3.5 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
             />
           </div>
 
@@ -92,9 +92,9 @@ export function LoginPage() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-11 py-3.5 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-amber-500">
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
@@ -107,7 +107,7 @@ export function LoginPage() {
             {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Logging In...</span> : 'Log In'}
           </button>
 
-          <p className="text-center text-sm text-slate-400 pt-4">
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 pt-4">
             Don't have a dealer account?{' '}
             <button type="button" onClick={() => navigate('/register')} className="text-amber-500 font-semibold hover:underline">
               Register Workshop
@@ -179,10 +179,10 @@ export function SignupPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
-        <h2 className="text-3xl font-bold text-white text-center mb-2">Register Workshop</h2>
-        <p className="text-center text-slate-400 text-sm mb-6">Join Tameer Fabricators Network to grow your business</p>
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-white flex items-center justify-center p-4 py-12">
+      <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl p-8 dark:bg-slate-900 dark:border-slate-800">
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-2">Register Workshop</h2>
+       <p className="text-center text-slate-600 dark:text-slate-400 text-sm mb-6">Join Tameer Fabricators Network to grow your business</p>
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div className="relative">
@@ -193,7 +193,7 @@ export function SignupPage() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
             />
           </div>
 
@@ -205,7 +205,7 @@ export function SignupPage() {
               value={formData.companyName}
               onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
               required
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
             />
           </div>
 
@@ -218,7 +218,7 @@ export function SignupPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
               />
             </div>
             <div className="relative">
@@ -229,7 +229,7 @@ export function SignupPage() {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
               />
             </div>
           </div>
@@ -243,7 +243,7 @@ export function SignupPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
               />
             </div>
             <div className="relative">
@@ -254,7 +254,7 @@ export function SignupPage() {
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
               />
             </div>
           </div>
@@ -501,7 +501,7 @@ export function CompleteProfilePage() {
 
   if (user && !user.isSubscribed) {
     return (
-      <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
+      <div className="min-h-[calc(100vh-5rem)]bg-white text-slate-900 dark:bg-slate-950 dark:text-white flex items-center justify-center p-4 py-12">
         <div className="w-full max-w-xl bg-slate-900 border border-amber-500/30 rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-amber-500 text-slate-950 font-bold text-xs uppercase px-3 py-1 rounded-bl-lg flex items-center gap-1">
             <Sparkles size={14} /> Partner Tier

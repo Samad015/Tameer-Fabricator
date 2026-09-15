@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from './context/AuthContext';
+
 
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -18,6 +20,7 @@ import MyWorkshop from './components/MyWorkshop'; // Workshop profile page
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white font-sans selection:bg-amber-500 selection:text-slate-950 transition-colors duration-300">
         <Navbar />
@@ -54,5 +57,6 @@ export default function App() {
         <Footer />
       </div>
     </AuthProvider>
+    </ThemeProvider>
   );
 }

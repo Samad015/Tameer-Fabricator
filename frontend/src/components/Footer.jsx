@@ -71,10 +71,6 @@ export default function Footer() {
 
                 <li className="flex items-center gap-2"><Mail size={18} className="text-amber-500" /> contact@tameerfabricators.com</li>
 
-                <li className="flex items-center gap-2">
-                  <Clapperboard size={18} className="text-amber-500" />
-                  <a href="https://www.instagram.com/tameerfabricators?igsi=MWE5ZDlrN2R2YWJ4OQ==" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">Instagram</a>
-                </li>
               </>
             )}
           </ul>
@@ -93,6 +89,11 @@ export default function Footer() {
                 <TvMinimalPlay size={18} className="text-amber-500" />
                 <a href="https://youtube.com/@tameerfabricators?si=cw6a_s71E4WpwEqn" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">YouTube</a>
               </li>
+
+              <li className="flex items-center gap-2">
+                  <Clapperboard size={18} className="text-amber-500" />
+                  <a href="https://www.instagram.com/tameerfabricators?igsi=MWE5ZDlrN2R2YWJ4OQ==" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition">Instagram</a>
+                </li>
             </ul>
           </div>
         )}

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Phone, User, MapPin, Sun, Moon, Search, Loader2, Navigation, Building2 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -23,26 +24,7 @@ export default function Navbar() {
   const [isSearching, setIsSearching] = useState(false);
 
   // ---------- THEME STATE ----------
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") || "dark";
-    }
-    return "dark";
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+  const { theme, toggleTheme, isDark } = useTheme();
   // -----------------------------------
 
   const profileRef = useRef(null);
@@ -309,14 +291,14 @@ export default function Navbar() {
               </button>
             </div>
 
-            <div className="hidden md:flex space-x-8 items-center font-medium">
+            <div className="hidden md:flex space-x-8 items-center font-medium text-sm">
               <a href="#services" onClick={(e) => scrollToSection(e, "services")} className="hover:text-amber-500 transition cursor-pointer">Services</a>
               <a href="#specifications" onClick={(e) => scrollToSection(e, "specifications")} className="hover:text-amber-500 transition cursor-pointer">Specifications</a>
               <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="hover:text-amber-500 transition cursor-pointer">About</a>
               <a href="#contact" onClick={(e) => scrollToSection(e, "contact-form")} className="hover:text-amber-500 transition cursor-pointer">Contact</a>
               
               {/* Dynamic Location-Based Call Button */}
-              <a href={`tel:${dealerPhone}`} className="bg-amber-500 text-slate-950 px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-400 transition cursor-pointer">
+              <a href={`tel:${dealerPhone}`} className="bg-amber-500 text-slate-950 px-2.5 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-400 transition cursor-pointer">
                 <Phone size={18} /> Call Now
               </a>
 
@@ -330,54 +312,92 @@ export default function Navbar() {
               </button>
 
               {/* Profile / Account Dropdown */}
-              <div className="relative" ref={profileRef}>
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition cursor-pointer"
-                  title={user ? (user.companyName || user.name) : "Dealer Login"}
-                >
-                  <User size={22} className={user ? "text-amber-500" : ""} />
-                </button>
+             {/* Login & Signup Buttons */}
+{!user ? (
+  <div className="flex items-center gap-2">
+    {/* LOGIN BUTTON */}
+    <button
+      onClick={() => goTo("/login")}
+      className="px-5 py-2.5 rounded-lg border border-amber-500 text-amber-500 font-bold hover:bg-amber-500 hover:text-slate-950 transition-all duration-300 cursor-pointer"
+    >
+      LOGIN
+    </button>
 
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
-                    {user ? (
-                      <>
-                        <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 text-xs">
-                          <span className="block text-slate-400">Signed in as</span>
-                          <span className="font-bold text-slate-900 dark:text-white truncate">{user.companyName || user.name}</span>
-                        </div>
-                        <button onClick={() => goTo("/my-workshop")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
-                          My Workshop Portal
-                        </button>
-                        <button onClick={() => { logout(); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-3 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer">
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => goTo("/login")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer">
-                          Dealer Login
-                        </button>
-                        <button onClick={() => goTo("/register")} className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer">
-                          Register Dealer
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+    {/* SIGNUP BUTTON */}
+    <button
+      onClick={() => goTo("/register")}
+      className="px-5 py-2.5 rounded-lg bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-all duration-300 cursor-pointer"
+    >
+      SIGNUP
+    </button>
+  </div>
+) : (
+  <div className="relative" ref={profileRef}>
+    <button
+      onClick={() => setIsProfileOpen(!isProfileOpen)}
+      className="h-11 w-11 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition cursor-pointer"
+      title={user.companyName || user.name}
+    >
+      <User size={22} className="text-amber-500" />
+    </button>
+
+    {isProfileOpen && (
+      <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
+        <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 text-xs">
+          <span className="block text-slate-400">
+            Signed in as
+          </span>
+          <span className="font-bold text-slate-900 dark:text-white truncate">
+            {user.companyName || user.name}
+          </span>
+        </div>
+
+        <button
+          onClick={() => goTo("/my-workshop")}
+          className="block w-full text-left px-4 py-3 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-500 transition cursor-pointer"
+        >
+          My Workshop Portal
+        </button>
+
+        <button
+          onClick={() => {
+            logout();
+            setIsProfileOpen(false);
+          }}
+          className="block w-full text-left px-4 py-3 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition border-t border-slate-200 dark:border-slate-700 cursor-pointer"
+        >
+          Logout
+        </button>
+      </div>
+    )}
+  </div>
+)}
             </div>
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-2">
               <button
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-100 text-amber-600 dark:bg-slate-800 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-              >
-                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
+  type="button"
+  onClick={toggleTheme}
+  aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+  title={`Switch to ${isDark ? "light" : "dark"} theme`}
+  className="
+    relative flex h-10 w-10 items-center justify-center
+    rounded-full border border-slate-300
+    bg-white text-slate-700
+    shadow-sm transition-all duration-300
+    hover:scale-110 hover:border-blue-500 hover:text-blue-600
+    dark:border-slate-700
+    dark:bg-slate-900 dark:text-yellow-300
+    dark:hover:border-yellow-400 dark:hover:text-yellow-200
+  "
+>
+  {isDark ? (
+    <Sun size={19} strokeWidth={2.2} />
+  ) : (
+    <Moon size={19} strokeWidth={2.2} />
+  )}
+</button>
               <button onClick={() => { setIsOpen(!isOpen); setIsProfileOpen(false); }} className="text-slate-700 dark:text-slate-200 p-2 cursor-pointer">
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
               </button>
@@ -401,9 +421,22 @@ export default function Navbar() {
                 </>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={() => goTo("/login")} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg text-sm font-bold text-center">Dealer Login</button>
-                  <button onClick={() => goTo("/register")} className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center">Register</button>
-                </div>
+  {/* MOBILE LOGIN */}
+  <button
+    onClick={() => goTo("/login")}
+    className="flex-1 border border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center transition-all duration-300"
+  >
+    LOGIN
+  </button>
+
+  {/* MOBILE SIGNUP */}
+  <button
+    onClick={() => goTo("/register")}
+    className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-2.5 rounded-lg text-sm font-bold text-center transition-all duration-300"
+  >
+    SIGNUP
+  </button>
+</div>
               )}
             </div>
           </div>
