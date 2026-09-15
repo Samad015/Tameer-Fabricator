@@ -20,11 +20,32 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Fix for Express v5 / path-to-regexp wildcard preflight routing
-app.options(/.*/, cors());
-
 app.use(express.json());
+
+// Helper: Send a transactional email via Brevo. Never throws - logs and resolves silently on failure
+// so that email delivery issues never block the actual user-facing request.
+const sendBrevoEmail = async ({ toEmail, toName, subject, htmlContent }) => {
+  if (!process.env.BREVO_API_KEY || !process.env.EMAIL_USER) return;
+
+  try {
+    await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
+        to: [{ email: toEmail, name: toName || 'Recipient' }],
+        subject,
+        htmlContent,
+      }),
+    });
+  } catch (err) {
+    console.error(`Brevo Email Failed (${subject}):`, err.message);
+  }
+};
 
 // API Health Check
 app.get('/api/health', (req, res) => {
@@ -91,7 +112,7 @@ app.get('/api/dealers/:id', async (req, res) => {
   }
 });
 
-// Contact / Quote Request Route (Saves Lead to DB + Sends Email Notification)
+// Contact / Quote Request Route (Saves Lead to DB + Notifies Dealer + Notifies Admin)
 app.post('/api/contact', async (req, res) => {
   const { name, phone, width, height, unit, shutterType, message, dealerId, dealerName, dealerEmail } = req.body;
 
@@ -117,43 +138,65 @@ app.post('/api/contact', async (req, res) => {
     });
     await newLead.save();
 
-    // 2. Send Email Notification via Brevo (Non-blocking for the lead save itself)
-    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
-      try {
-        const emailData = {
-          sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
-          to: [{ email: dealerEmail || process.env.EMAIL_USER, name: dealerName || "Dealer" }],
-          subject: `New Quote Request from ${name}`,
-          htmlContent: `
-            <h2>New Project Inquiry - Tameer Fabricators</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Phone:</strong> ${phone}</p>
-            <p><strong>Width:</strong> ${width || 'N/A'} ${unit || ''}</p>
-            <p><strong>Height:</strong> ${height || 'N/A'} ${unit || ''}</p>
-            <p><strong>Shutter Type:</strong> ${shutterType || 'N/A'}</p>
-            <p><strong>Requirements:</strong> ${message || 'N/A'}</p>
-          `,
-        };
+    const leadDetailsHtml = `
+      <p><strong>Dealer:</strong> ${dealerName || 'Unknown'}</p>
+      <p><strong>Customer Name:</strong> ${name}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Width:</strong> ${width || 'N/A'} ${unit || ''}</p>
+      <p><strong>Height:</strong> ${height || 'N/A'} ${unit || ''}</p>
+      <p><strong>Shutter Type:</strong> ${shutterType || 'N/A'}</p>
+      <p><strong>Requirements:</strong> ${message || 'N/A'}</p>
+    `;
 
-        await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'api-key': process.env.BREVO_API_KEY,
-          },
-          body: JSON.stringify(emailData),
-        });
-      } catch (emailErr) {
-        console.error('Brevo Email Delivery Failed (Lead was still saved):', emailErr.message);
-      }
-    }
+    // 2. Notify the Dealer (non-blocking, best-effort)
+    sendBrevoEmail({
+      toEmail: dealerEmail || process.env.EMAIL_USER,
+      toName: dealerName || 'Dealer',
+      subject: `New Quote Request from ${name}`,
+      htmlContent: `<h2>New Project Inquiry - Tameer Fabricators</h2>${leadDetailsHtml}`
+    });
+
+    // 3. Notify Admin/Site Owner that this dealer received a lead (non-blocking, best-effort)
+    sendBrevoEmail({
+      toEmail: process.env.EMAIL_USER,
+      toName: 'Admin',
+      subject: `Lead Alert: ${dealerName || 'A dealer'} got a new quote request`,
+      htmlContent: `<h2>Dealer Lead Notification</h2><p>${dealerName || 'A dealer'} just received a quote request via the website.</p>${leadDetailsHtml}`
+    });
 
     return res.status(200).json({ success: true, message: 'Quote request submitted successfully!' });
   } catch (error) {
     console.error('Contact/Lead Save Error:', error.message || error);
     return res.status(500).json({ success: false, message: 'Failed to submit quote request.' });
   }
+});
+
+// Lightweight Click Tracking: notifies Admin when a customer clicks a
+// dealer's Call or WhatsApp button anywhere on the site. No customer
+// details are available for these (anonymous click), so nothing is
+// saved to the Lead collection - this is purely an admin notification.
+app.post('/api/notify-click', async (req, res) => {
+  const { dealerId, dealerName, actionType } = req.body;
+
+  // Always respond quickly - this must never block or break the customer's
+  // call/WhatsApp action on the frontend.
+  res.status(200).json({ success: true });
+
+  if (!dealerId || !actionType) return;
+
+  const actionLabel = actionType === 'whatsapp' ? 'WhatsApp Inquiry' : 'Direct Call';
+
+  sendBrevoEmail({
+    toEmail: process.env.EMAIL_USER,
+    toName: 'Admin',
+    subject: `Lead Alert: ${dealerName || 'A dealer'} got a new lead (${actionLabel})`,
+    htmlContent: `
+      <h2>Dealer Lead Notification</h2>
+      <p><strong>Dealer:</strong> ${dealerName || 'Unknown'}</p>
+      <p><strong>Action:</strong> Customer clicked "${actionLabel}"</p>
+      <p><em>Note: Customer contact details are not captured for this click type.</em></p>
+    `
+  });
 });
 
 // Serve Static Frontend Files in Production (Render Monorepo or Combined Setup)

@@ -1,17 +1,39 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Phone, User, MapPin, Sun, Moon, Search, Loader2, Navigation, Building2 } from "lucide-react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useContext
+} from "react";
+
+import {
+  useNavigate,
+  useLocation
+} from "react-router-dom";
+
+import {
+  Menu,
+  X,
+  Phone,
+  User,
+  MapPin,
+  Sun,
+  Moon,
+  Search,
+  Loader2,
+  Navigation,
+} from "lucide-react";
+
 import { AuthContext } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
 export default function Navbar() {
-  const { user, logout } = useContext(AuthContext);
-
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [pincodeInput, setPincodeInput] = useState("");
   const [dealerPhone, setDealerPhone] = useState("+918439860719");
+  const [dealerId, setDealerId] = useState(null);
+  const [dealerCompanyName, setDealerCompanyName] = useState("");
   const [currentLocationText, setCurrentLocationText] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("userLocationName") || "Bareilly, UP";
@@ -37,7 +59,19 @@ export default function Navbar() {
     if (import.meta.env.VITE_API_URL) {
       return import.meta.env.VITE_API_URL;
     }
-    return window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'https://tameer-fabricator-backend.onrender.com';
+    return window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+  };
+
+  // Fire-and-forget: notifies admin that a customer engaged with a dealer's
+  // Call button from the navbar. Never blocks the tel: navigation.
+  const notifyDealerClick = () => {
+    if (!dealerId) return;
+    const baseUrl = getApiBaseUrl();
+    fetch(`${baseUrl}/api/notify-click`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dealerId, dealerName: dealerCompanyName, actionType: 'call' })
+    }).catch(() => {});
   };
 
   // Fetch active dealer's phone number based on location
@@ -53,15 +87,20 @@ export default function Navbar() {
         const activeDealer = data.dealers[0];
         if (activeDealer.phone) {
           setDealerPhone(activeDealer.phone);
+          setDealerId(activeDealer._id);
+          setDealerCompanyName(activeDealer.companyName || activeDealer.name || "");
         } else {
           setDealerPhone("+918439860719");
+          setDealerId(null);
         }
       } else {
         setDealerPhone("+918439860719");
+        setDealerId(null);
       }
     } catch (error) {
       console.error("Error fetching dealer contact:", error);
       setDealerPhone("+918439860719");
+      setDealerId(null);
     }
   };
 
@@ -128,6 +167,54 @@ export default function Navbar() {
       );
     }
   }, []);
+
+  const handleLocationSearch = async (e) => {
+    e.preventDefault();
+
+    const pincode = pincodeInput.trim();
+
+    if (!/^\d{6}$/.test(pincode)) {
+      alert("Please enter a valid 6-digit pincode.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.postalpincode.in/pincode/${pincode}`
+      );
+      const data = await response.json();
+
+      if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length) {
+        const office = data[0].PostOffice[0];
+        const city = office.District || office.Block || office.Name || "Bareilly";
+        let stateName = office.State || "";
+
+        if (stateName.toLowerCase().includes("uttar pradesh")) {
+          stateName = "UP";
+        } else if (stateName.toLowerCase().includes("uttarakhand")) {
+          stateName = "UK";
+        } else {
+          stateName = stateName
+            ? stateName.substring(0, 2).toUpperCase()
+            : "";
+        }
+
+        const locationString = `${city}, ${stateName}`;
+        localStorage.setItem("userLocationName", locationString);
+        localStorage.setItem("userCity", city);
+        window.dispatchEvent(new Event("cityChanged"));
+
+        setCurrentLocationText(locationString);
+        setIsLocationModalOpen(false);
+        setPincodeInput("");
+      } else {
+        alert("No location found for this pincode.");
+      }
+    } catch (error) {
+      console.error("Pincode search error:", error);
+      alert("Unable to search this pincode. Please try again.");
+    }
+  };
 
   const handleNativeGPSDetect = () => {
     if (!navigator.geolocation) {
@@ -457,7 +544,7 @@ export default function Navbar() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Find Local Dealer</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Use GPS or search by city</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Use GPS or search by city / pincode</p>
               </div>
             </div>
 
