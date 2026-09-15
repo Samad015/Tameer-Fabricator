@@ -25,6 +25,9 @@ export function LoginPage() {
     setLoading(true);
 
     try {
+      // Wake up Render server first to avoid preflight/CORS drops
+      await fetch(`${API_BASE}/api/health`).catch(() => {});
+
       const loginValue = formData.emailOrPhone.trim();
       const phoneNumber = loginValue.replace(/[\s-]/g, '');
       const isPhone = /^[+]?[0-9]{10,13}$/.test(phoneNumber);
@@ -56,7 +59,7 @@ export function LoginPage() {
       }
     } catch (err) {
       console.error('Login Error:', err);
-      alert('Network error while logging in.');
+      alert('Server is waking up from sleep mode. Please try logging in again in 10 seconds.');
     } finally {
       setLoading(false);
     }
@@ -142,6 +145,9 @@ export function SignupPage() {
     setLoading(true);
 
     try {
+      // Wake up Render server first to avoid connection drop
+      await fetch(`${API_BASE}/api/health`).catch(() => {});
+
       const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,7 +172,7 @@ export function SignupPage() {
       }
     } catch (err) {
       console.error('Register Error:', err);
-      alert('Error connecting to backend server.');
+      alert('Server is waking up from sleep mode. Please try registering again in 10 seconds.');
     } finally {
       setLoading(false);
     }
@@ -258,7 +264,7 @@ export function SignupPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider hover:from-amber-400 transition shadow-lg mt-4"
           >
-            {loading ? 'Sending OTP...' : 'Register & Verify Email'}
+            {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Sending OTP...</span> : 'Register & Verify Email'}
           </button>
 
           <p className="text-center text-sm text-slate-400 pt-2">
@@ -288,6 +294,8 @@ export function VerifyOtp() {
     setLoading(true);
 
     try {
+      await fetch(`${API_BASE}/api/health`).catch(() => {});
+
       const response = await fetch(`${API_BASE}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -337,7 +345,7 @@ export function VerifyOtp() {
             disabled={loading}
             className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg"
           >
-            {loading ? 'Verifying...' : 'Verify OTP & Continue'}
+            {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Verifying...</span> : 'Verify OTP & Continue'}
           </button>
         </form>
       </div>
@@ -420,6 +428,8 @@ export function CompleteProfilePage() {
     const token = localStorage.getItem('token');
 
     try {
+      await fetch(`${API_BASE}/api/health`).catch(() => {});
+
       const response = await fetch(`${API_BASE}/api/auth/subscribe`, {
         method: 'POST',
         headers: {
@@ -461,6 +471,8 @@ export function CompleteProfilePage() {
     };
 
     try {
+      await fetch(`${API_BASE}/api/health`).catch(() => {});
+
       const response = await fetch(`${API_BASE}/api/auth/complete-profile`, {
         method: 'PUT',
         headers: {
@@ -481,7 +493,7 @@ export function CompleteProfilePage() {
       }
     } catch (err) {
       console.error('Profile completion error:', err);
-      alert('Server error while saving workshop profile.');
+      alert('Server is waking up from sleep mode. Please try clicking submit again in 10 seconds.');
     } finally {
       setLoading(false);
     }
@@ -704,7 +716,7 @@ export function CompleteProfilePage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 transition shadow-xl uppercase tracking-wider"
           >
-            {loading ? 'Publishing Profile...' : 'Complete & Publish Workshop Profile'}
+            {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Publishing Profile...</span> : 'Complete & Publish Workshop Profile'}
           </button>
         </form>
       </div>
