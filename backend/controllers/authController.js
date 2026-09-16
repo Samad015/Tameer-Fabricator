@@ -2,6 +2,13 @@ const User = require('../models/User');
 const Lead = require('../models/Lead');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const {
+  validateEmail,
+  validatePhone,
+  validatePassword,
+  validateName,
+  verifyDomainHasMailServer
+} = require('../utils/validators');
 
 // Helper: JWT Generator (30 Days Validity)
 const generateToken = (id, email) => {
@@ -12,19 +19,113 @@ const generateToken = (id, email) => {
   );
 };
 
+// Helper: Brevo email sender that never throws
+const sendBrevoEmail = async ({ toEmail, toName, subject, htmlContent }) => {
+  if (!process.env.BREVO_API_KEY || !process.env.EMAIL_USER) return;
+
+  try {
+    await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: 'Tameer Fabricators', email: process.env.EMAIL_USER },
+        to: [{ email: toEmail, name: toName || 'Recipient' }],
+        subject,
+        htmlContent,
+      }),
+    });
+  } catch (err) {
+    console.error(`Brevo Email Failed (${subject}):`, err.message);
+  }
+};
+
 // 1. REGISTER CONTROLLER
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, companyName } = req.body;
 
-    if (!name || !email || !password || !phone) {
-      return res.status(400).json({ success: false, message: 'All fields (name, email, phone, password) are required.' });
+    // ---- Field-by-field validation (fail fast with a specific message) ----
+    const nameCheck = validateName(name, 'Full name');
+    if (!nameCheck.valid) {
+      return res.status(400).json({ success: false, field: 'name', message: nameCheck.message });
     }
 
-    let existingUser = await User.findOne({ $or: [{ email }, { phone }] });
-    
-    if (existingUser && existingUser.isVerified) {
-      return res.status(400).json({ success: false, message: 'Email or Phone is already registered and verified.' });
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) {
+      return res.status(400).json({ success: false, field: 'email', message: emailCheck.message });
+    }
+
+    // Confirm the domain can actually receive mail (catches typos like
+    // "gnail.com" or made-up domains). Cannot confirm the specific mailbox
+    // exists - that is enforced by the OTP step below.
+    const domainHasMailServer = await verifyDomainHasMailServer(emailCheck.value);
+    if (!domainHasMailServer) {
+      return res.status(400).json({
+        success: false,
+        field: 'email',
+        message: 'This email domain does not appear to accept mail. Please check for typos.'
+      });
+    }
+
+    const phoneCheck = validatePhone(phone);
+    if (!phoneCheck.valid) {
+      return res.status(400).json({ success: false, field: 'phone', message: phoneCheck.message });
+    }
+
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) {
+      return res.status(400).json({ success: false, field: 'password', message: passwordCheck.message });
+    }
+
+    // Company name is optional at registration but validated when supplied
+    let cleanCompanyName = '';
+    if (companyName && companyName.trim()) {
+      const companyCheck = validateName(companyName, 'Workshop name');
+      if (!companyCheck.valid) {
+        return res.status(400).json({ success: false, field: 'companyName', message: companyCheck.message });
+      }
+      cleanCompanyName = companyCheck.value;
+    }
+
+    const cleanName = nameCheck.value;
+    const cleanEmail = emailCheck.value;
+    const cleanPhone = phoneCheck.value;
+
+    // ---- Duplicate checks with precise messaging ----
+    const emailOwner = await User.findOne({ email: cleanEmail });
+    if (emailOwner && emailOwner.isVerified) {
+      return res.status(409).json({ success: false, field: 'email', message: 'This email is already registered. Please log in instead.' });
+    }
+
+    const phoneOwner = await User.findOne({ phone: cleanPhone });
+    if (phoneOwner && phoneOwner.isVerified) {
+      return res.status(409).json({ success: false, field: 'phone', message: 'This mobile number is already registered. Please log in instead.' });
+    }
+
+    // If an unverified record exists under a different id for the other field,
+    // block it so we never merge two distinct pending signups.
+    if (emailOwner && phoneOwner && !emailOwner._id.equals(phoneOwner._id)) {
+      return res.status(409).json({ success: false, message: 'This email and mobile number belong to different pending accounts. Please use a different combination.' });
+    }
+
+    const existingUser = emailOwner || phoneOwner;
+
+    // ---- OTP resend throttling (prevents email bombing / abuse) ----
+    if (existingUser && existingUser.otpExpires) {
+      const otpIssuedAt = new Date(existingUser.otpExpires).getTime() - 10 * 60 * 1000;
+      const secondsSinceLastOtp = (Date.now() - otpIssuedAt) / 1000;
+
+      if (secondsSinceLastOtp < 60) {
+        const waitSeconds = Math.ceil(60 - secondsSinceLastOtp);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${waitSeconds} second(s) before requesting another OTP.`
+        });
+      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -33,74 +134,75 @@ exports.register = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    if (existingUser && !existingUser.isVerified) {
-      existingUser.name = name;
-      existingUser.email = email;
-      existingUser.phone = phone;
+    let userRecord;
+
+    if (existingUser) {
+      // Unverified account: refresh its details and re-issue an OTP
+      existingUser.name = cleanName;
+      existingUser.email = cleanEmail;
+      existingUser.phone = cleanPhone;
+      if (cleanCompanyName) existingUser.companyName = cleanCompanyName;
       existingUser.password = hashedPassword;
       existingUser.otp = otp;
       existingUser.otpExpires = otpExpires;
+      existingUser.otpAttempts = 0;
       await existingUser.save();
+      userRecord = existingUser;
     } else {
-      existingUser = new User({
-        name,
-        email,
-        phone,
+      userRecord = new User({
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        companyName: cleanCompanyName || undefined,
         password: hashedPassword,
         otp,
         otpExpires,
+        otpAttempts: 0,
         isVerified: false,
         isPhoneVerified: false,
         isSubscribed: false,
         isProfileComplete: false
       });
-      await existingUser.save();
+      await userRecord.save();
     }
 
     console.log(`\n========================================`);
-    console.log(`[DEMO OTP for ${phone} / ${email}]: ${otp}`);
+    console.log(`[DEMO OTP for ${cleanPhone} / ${cleanEmail}]: ${otp}`);
     console.log(`========================================\n`);
 
-    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
-      try {
-        const emailData = {
-          sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
-          to: [{ email: email, name: name }],
-          subject: "Your Verification OTP - Tameer Fabricators",
-          htmlContent: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff;">
-              <h2 style="color: #f59e0b;">Tameer Fabricators Partner Verification</h2>
-              <p>Hello ${name},</p>
-              <p>Your OTP for account verification is:</p>
-              <h1 style="color: #f59e0b; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
-              <p>This OTP is valid for 10 minutes.</p>
-            </div>
-          `,
-        };
-
-        await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'api-key': process.env.BREVO_API_KEY,
-          },
-          body: JSON.stringify(emailData),
-        });
-      } catch (emailErr) {
-        console.error('Brevo Email Delivery Failed:', emailErr.message);
-      }
-    }
+    sendBrevoEmail({
+      toEmail: cleanEmail,
+      toName: cleanName,
+      subject: 'Your Verification OTP - Tameer Fabricators',
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff;">
+          <h2 style="color: #f59e0b;">Tameer Fabricators Partner Verification</h2>
+          <p>Hello ${cleanName},</p>
+          <p>Your OTP for account verification is:</p>
+          <h1 style="color: #f59e0b; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+          <p>This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+        </div>
+      `
+    });
 
     return res.status(200).json({ 
       success: true, 
-      message: 'Registration successful! OTP sent to your email/phone.',
-      demoOtp: otp 
+      message: 'Registration successful! OTP sent to your email.',
+      email: cleanEmail,
+      // Demo OTP is only exposed outside production
+      ...(process.env.NODE_ENV !== 'production' ? { demoOtp: otp } : {})
     });
 
   } catch (error) {
     console.error('Registration Error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Server error during registration' });
+
+    // Handle Mongo duplicate-key races gracefully
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'account';
+      return res.status(409).json({ success: false, message: `This ${field} is already registered.` });
+    }
+
+    return res.status(500).json({ success: false, message: 'Server error during registration. Please try again.' });
   }
 };
 
@@ -109,21 +211,67 @@ exports.verifyOtp = async (req, res) => {
   try {
     const { email, phone, otp } = req.body;
 
-    const query = email ? { email } : { phone };
+    if (!otp || !/^\d{6}$/.test(String(otp).trim())) {
+      return res.status(400).json({ success: false, message: 'Please enter the 6-digit OTP.' });
+    }
+
+    let query;
+    if (email) {
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({ success: false, message: 'Invalid email address.' });
+      }
+      query = { email: emailCheck.value };
+    } else if (phone) {
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.valid) {
+        return res.status(400).json({ success: false, message: 'Invalid mobile number.' });
+      }
+      query = { phone: phoneCheck.value };
+    } else {
+      return res.status(400).json({ success: false, message: 'Email or mobile number is required.' });
+    }
+
     const user = await User.findOne(query);
 
     if (!user) {
-      return res.status(400).json({ success: false, message: 'User account not found.' });
+      return res.status(404).json({ success: false, message: 'Account not found. Please register first.' });
     }
 
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, message: 'This account is already verified. Please log in.' });
+    }
+
+    // Brute-force protection: lock after 5 wrong attempts on the same OTP
+    if ((user.otpAttempts || 0) >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many incorrect attempts. Please request a new OTP.'
+      });
+    }
+
+    if (!user.otpExpires || user.otpExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: 'This OTP has expired. Please request a new one.' });
+    }
+
+    if (user.otp !== String(otp).trim()) {
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      await user.save();
+
+      const remaining = Math.max(0, 5 - user.otpAttempts);
+      return res.status(400).json({
+        success: false,
+        message: remaining > 0
+          ? `Incorrect OTP. ${remaining} attempt(s) remaining.`
+          : 'Too many incorrect attempts. Please request a new OTP.'
+      });
     }
 
     user.isVerified = true;
     user.isPhoneVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
+    user.otpAttempts = 0;
     await user.save();
 
     const token = generateToken(user._id, user.email);
@@ -137,6 +285,7 @@ exports.verifyOtp = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        companyName: user.companyName,
         isSubscribed: user.isSubscribed,
         isProfileComplete: user.isProfileComplete
       }
@@ -144,7 +293,7 @@ exports.verifyOtp = async (req, res) => {
 
   } catch (error) {
     console.error('Verify OTP Error:', error.message);
-    return res.status(500).json({ success: false, message: error.message || 'Server error during verification' });
+    return res.status(500).json({ success: false, message: 'Server error during verification.' });
   }
 };
 
@@ -210,6 +359,28 @@ exports.completeProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
+    // Validate pincode when provided
+    if (pincode && !/^\d{6}$/.test(String(pincode).trim())) {
+      return res.status(400).json({ success: false, field: 'pincode', message: 'Pincode must be 6 digits.' });
+    }
+
+    // Validate GSTIN format when provided (15 chars, standard Indian format)
+    if (gstin && gstin.trim() && !/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(gstin.trim().toUpperCase())) {
+      return res.status(400).json({ success: false, field: 'gstin', message: 'Please enter a valid 15-character GSTIN.' });
+    }
+
+    // Validate PAN format when provided
+    if (pan && pan.trim() && !/^[A-Z]{5}\d{4}[A-Z]{1}$/.test(pan.trim().toUpperCase())) {
+      return res.status(400).json({ success: false, field: 'pan', message: 'Please enter a valid 10-character PAN.' });
+    }
+
+    if (perKgPrice !== undefined && perKgPrice !== null && perKgPrice !== '') {
+      const numericPrice = Number(perKgPrice);
+      if (isNaN(numericPrice) || numericPrice <= 0 || numericPrice > 100000) {
+        return res.status(400).json({ success: false, field: 'perKgPrice', message: 'Please enter a valid per-kg price.' });
+      }
+    }
+
     // Update Profile Fields with Frontend Alias Fallbacks
     user.companyName = companyName || businessName || user.companyName || user.name;
     user.businessType = businessType || user.businessType;
@@ -250,20 +421,43 @@ exports.completeProfile = async (req, res) => {
 // 5. LOGIN CONTROLLER
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
 
-    const user = await User.findOne({ email });
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required.' });
+    }
+
+    let query;
+    if (email) {
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({ success: false, message: 'Invalid email or password.' });
+      }
+      query = { email: emailCheck.value };
+    } else if (phone) {
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.valid) {
+        return res.status(400).json({ success: false, message: 'Invalid mobile number or password.' });
+      }
+      query = { phone: phoneCheck.value };
+    } else {
+      return res.status(400).json({ success: false, message: 'Email or mobile number is required.' });
+    }
+
+    const user = await User.findOne(query);
+
+    // Generic message on purpose: never reveal whether the account exists
     if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password.' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check and try again.' });
     }
 
     if (!user.isVerified) {
-      return res.status(400).json({ success: false, message: 'Please verify your account via OTP first.' });
+      return res.status(403).json({ success: false, message: 'Please verify your account via OTP first.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password.' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check and try again.' });
     }
 
     const token = generateToken(user._id, user.email);
@@ -276,6 +470,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name, 
         email: user.email, 
+        phone: user.phone,
         companyName: user.companyName,
         isSubscribed: user.isSubscribed,
         isProfileComplete: user.isProfileComplete
@@ -284,7 +479,7 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error('Login Error:', error.message);
-    return res.status(500).json({ success: false, message: error.message || 'Server error during login' });
+    return res.status(500).json({ success: false, message: 'Server error during login.' });
   }
 };
 
@@ -315,6 +510,10 @@ exports.updatePrice = async (req, res) => {
     const numericPrice = Number(perKgPrice);
     if (isNaN(numericPrice) || numericPrice <= 0) {
       return res.status(400).json({ success: false, message: 'Please enter a valid positive price.' });
+    }
+
+    if (numericPrice > 100000) {
+      return res.status(400).json({ success: false, message: 'Price seems unrealistically high. Please check the value.' });
     }
 
     const user = await User.findById(userId);

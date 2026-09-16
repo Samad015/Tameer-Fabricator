@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

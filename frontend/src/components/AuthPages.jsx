@@ -4,10 +4,92 @@ import { AuthContext } from '../context/AuthContext';
 import { 
   Mail, Lock, User, Building2, MapPin, Phone, 
   FileText, Eye, EyeOff, Search, Loader2, IndianRupee,
-  CheckCircle, CreditCard, Sparkles, ArrowRight
+  CheckCircle, CreditCard, Sparkles, ArrowRight, AlertCircle, Check, X
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
+
+// ==========================================
+// SHARED VALIDATION HELPERS
+// Mirrors the server-side rules so users get instant feedback,
+// but the server remains the actual source of truth.
+// ==========================================
+const DISPOSABLE_DOMAINS = [
+  'mailinator.com', 'yopmail.com', 'guerrillamail.com', 'sharklasers.com',
+  '10minutemail.com', 'tempmail.com', 'temp-mail.org', 'throwawaymail.com',
+  'trashmail.com', 'getnada.com', 'dispostable.com', 'maildrop.cc',
+  'fakeinbox.com', 'mailnesia.com', 'moakt.com', 'mohmal.com', 'mailsac.com'
+];
+
+const validateEmailField = (value) => {
+  const email = value.trim().toLowerCase();
+  if (!email) return 'Email address is required.';
+
+  const pattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!pattern.test(email)) return 'Please enter a valid email address.';
+
+  const [localPart, domain] = email.split('@');
+  if (localPart.startsWith('.') || localPart.endsWith('.') || localPart.includes('..')) {
+    return 'Please enter a valid email address.';
+  }
+
+  if (DISPOSABLE_DOMAINS.includes(domain)) {
+    return 'Temporary email addresses are not allowed. Please use a permanent email.';
+  }
+
+  return '';
+};
+
+const validatePhoneField = (value) => {
+  let digits = value.replace(/\D/g, '');
+  if (!digits) return 'Mobile number is required.';
+
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+
+  if (digits.length !== 10) return 'Mobile number must be exactly 10 digits.';
+  if (!/^[6-9]\d{9}$/.test(digits)) return 'Must be a valid Indian number starting with 6, 7, 8 or 9.';
+  if (/^(\d)\1{9}$/.test(digits)) return 'Please enter a real mobile number.';
+
+  return '';
+};
+
+const validateNameField = (value, label) => {
+  const name = value.trim();
+  if (!name) return `${label} is required.`;
+  if (name.length < 2) return `${label} must be at least 2 characters.`;
+  if (!/^[a-zA-Z0-9\s.,'&()-]+$/.test(name)) return `${label} contains invalid characters.`;
+  if (!/[a-zA-Z]/.test(name)) return `Please enter a valid ${label.toLowerCase()}.`;
+  return '';
+};
+
+// Returns the individual password rules and whether each is met,
+// so the UI can render a live checklist.
+const getPasswordRules = (password) => ([
+  { label: 'At least 8 characters', met: password.length >= 8 },
+  { label: 'One uppercase letter (A-Z)', met: /[A-Z]/.test(password) },
+  { label: 'One lowercase letter (a-z)', met: /[a-z]/.test(password) },
+  { label: 'One number (0-9)', met: /\d/.test(password) },
+  { label: 'One special character (@ # $ !)', met: /[!@#$%^&*()\-_=+[\]{};:'",.<>/?\\|`~]/.test(password) },
+]);
+
+const validatePasswordField = (password) => {
+  if (!password) return 'Password is required.';
+  const unmet = getPasswordRules(password).filter((r) => !r.met);
+  if (unmet.length > 0) return 'Password does not meet all requirements.';
+  return '';
+};
+
+// Small reusable inline error line
+const FieldError = ({ message }) => {
+  if (!message) return null;
+  return (
+    <p className="flex items-start gap-1.5 text-xs text-red-400 mt-1.5">
+      <AlertCircle size={13} className="shrink-0 mt-0.5" />
+      <span>{message}</span>
+    </p>
+  );
+};
 
 // ==========================================
 // 1. LOGIN COMPONENT
@@ -17,10 +99,12 @@ export function LoginPage() {
   const { loginSession } = useContext(AuthContext);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
   const [formData, setFormData] = useState({ emailOrPhone: '', password: '' });
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setServerError('');
     setLoading(true);
 
     try {
@@ -51,21 +135,28 @@ export function LoginPage() {
           navigate('/my-workshop');
         }
       } else {
-        alert(data.message || 'Login failed. Please check credentials.');
+        setServerError(data.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
       console.error('Login Error:', err);
-      alert('Network error while logging in.');
+      setServerError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-white flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-8 dark:bg-slate-900 dark:border-slate-800">
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-2">Dealer Portal Login</h2>
-        <p className="text-center text-slate-600 dark:text-slate-400 text-sm mb-8">Access your workshop dashboard & customer leads</p>
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+        <h2 className="text-3xl font-bold text-white text-center mb-2">Dealer Portal Login</h2>
+        <p className="text-center text-slate-400 text-sm mb-8">Access your workshop dashboard & customer leads</p>
+
+        {serverError && (
+          <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{serverError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="relative">
@@ -76,7 +167,8 @@ export function LoginPage() {
               value={formData.emailOrPhone}
               onChange={(e) => setFormData({ ...formData, emailOrPhone: e.target.value })}
               required
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3.5 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
+              autoComplete="username"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
             />
           </div>
 
@@ -88,9 +180,10 @@ export function LoginPage() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-11 py-3.5 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
+              autoComplete="current-password"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-11 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-amber-500">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
@@ -98,12 +191,12 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg mt-2"
+            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg mt-2 disabled:opacity-60"
           >
             {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Logging In...</span> : 'Log In'}
           </button>
 
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 pt-4">
+          <p className="text-center text-sm text-slate-400 pt-4">
             Don't have a dealer account?{' '}
             <button type="button" onClick={() => navigate('/register')} className="text-amber-500 font-semibold hover:underline">
               Register Workshop
@@ -122,6 +215,9 @@ export function SignupPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -131,10 +227,68 @@ export function SignupPage() {
     confirmPassword: ''
   });
 
+  // Tracks which fields the user has interacted with, so we don't
+  // show errors on fields they haven't reached yet.
+  const [touched, setTouched] = useState({});
+  const [errors, setErrors] = useState({});
+
+  const passwordRules = getPasswordRules(formData.password);
+
+  const validateField = (field, value, allValues = formData) => {
+    switch (field) {
+      case 'name': return validateNameField(value, 'Full name');
+      case 'companyName': return validateNameField(value, 'Workshop name');
+      case 'email': return validateEmailField(value);
+      case 'phone': return validatePhoneField(value);
+      case 'password': return validatePasswordField(value);
+      case 'confirmPassword':
+        if (!value) return 'Please confirm your password.';
+        if (value !== allValues.password) return 'Passwords do not match.';
+        return '';
+      default: return '';
+    }
+  };
+
+  const handleChange = (field, value) => {
+    const updated = { ...formData, [field]: value };
+    setFormData(updated);
+
+    // Re-validate this field live once it has been touched
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validateField(field, value, updated) }));
+    }
+
+    // Keep confirmPassword in sync when the main password changes
+    if (field === 'password' && touched.confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: updated.confirmPassword && updated.confirmPassword !== value ? 'Passwords do not match.' : ''
+      }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, formData[field]) }));
+  };
+
+  const validateAll = () => {
+    const fields = ['name', 'companyName', 'email', 'phone', 'password', 'confirmPassword'];
+    const newErrors = {};
+    fields.forEach((f) => {
+      const err = validateField(f, formData[f]);
+      if (err) newErrors[f] = err;
+    });
+    setErrors(newErrors);
+    setTouched(fields.reduce((acc, f) => ({ ...acc, [f]: true }), {}));
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+    setServerError('');
+
+    if (!validateAll()) {
       return;
     }
 
@@ -145,10 +299,10 @@ export function SignupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          companyName: formData.companyName,
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.replace(/\D/g, ''),
+          companyName: formData.companyName.trim(),
           password: formData.password,
           role: 'dealer'
         })
@@ -157,107 +311,184 @@ export function SignupPage() {
       const data = await response.json();
 
       if (data.success) {
-        sessionStorage.setItem('verifyEmail', formData.email);
-        alert('Registration successful! OTP sent to your email.');
+        sessionStorage.setItem('verifyEmail', data.email || formData.email.trim().toLowerCase());
         navigate('/verify-otp');
       } else {
-        alert(data.message || 'Registration failed.');
+        // Map server-side field errors back onto the matching input
+        if (data.field) {
+          setErrors((prev) => ({ ...prev, [data.field]: data.message }));
+          setTouched((prev) => ({ ...prev, [data.field]: true }));
+        } else {
+          setServerError(data.message || 'Registration failed. Please try again.');
+        }
       }
     } catch (err) {
       console.error('Register Error:', err);
-      alert('Error connecting to backend server.');
+      setServerError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClass = (field) =>
+    `w-full bg-slate-800/60 border rounded-lg pl-11 pr-4 py-3 text-white text-sm focus:outline-none transition ${
+      touched[field] && errors[field]
+        ? 'border-red-500/60 focus:border-red-500'
+        : 'border-slate-700 focus:border-amber-500'
+    }`;
+
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-white flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl p-8 dark:bg-slate-900 dark:border-slate-800">
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-2">Register Workshop</h2>
-       <p className="text-center text-slate-600 dark:text-slate-400 text-sm mb-6">Join Tameer Fabricators Network to grow your business</p>
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
+      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+        <h2 className="text-3xl font-bold text-white text-center mb-2">Register Workshop</h2>
+        <p className="text-center text-slate-400 text-sm mb-6">Join Tameer Fabricators Network to grow your business</p>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div className="relative">
-            <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-            <input
-              type="text"
-              placeholder="Full Name *"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
-            />
+        {serverError && (
+          <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{serverError}</span>
           </div>
+        )}
 
-          <div className="relative">
-            <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-            <input
-              type="text"
-              placeholder="Workshop / Business Name *"
-              value={formData.companyName}
-              onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-              required
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleRegister} noValidate className="space-y-4">
+          <div>
             <div className="relative">
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-              <input
-                type="email"
-                placeholder="Email Address *"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
-              />
-            </div>
-            <div className="relative">
-              <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+              <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
               <input
                 type="text"
-                placeholder="Mobile Number *"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                required
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
+                placeholder="Full Name *"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                onBlur={() => handleBlur('name')}
+                autoComplete="name"
+                className={inputClass('name')}
               />
+            </div>
+            <FieldError message={touched.name ? errors.name : ''} />
+          </div>
+
+          <div>
+            <div className="relative">
+              <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+              <input
+                type="text"
+                placeholder="Workshop / Business Name *"
+                value={formData.companyName}
+                onChange={(e) => handleChange('companyName', e.target.value)}
+                onBlur={() => handleBlur('companyName')}
+                autoComplete="organization"
+                className={inputClass('companyName')}
+              />
+            </div>
+            <FieldError message={touched.companyName ? errors.companyName : ''} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="relative">
+                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type="email"
+                  placeholder="Email Address *"
+                  value={formData.email}
+                  onChange={(e) => handleChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
+                  autoComplete="email"
+                  className={inputClass('email')}
+                />
+              </div>
+              <FieldError message={touched.email ? errors.email : ''} />
+            </div>
+
+            <div>
+              <div className="relative">
+                <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={13}
+                  placeholder="Mobile Number *"
+                  value={formData.phone}
+                  onChange={(e) => handleChange('phone', e.target.value)}
+                  onBlur={() => handleBlur('phone')}
+                  autoComplete="tel"
+                  className={inputClass('phone')}
+                />
+              </div>
+              <FieldError message={touched.phone ? errors.phone : ''} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Password *"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
-              />
+            <div>
+              <div className="relative">
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password *"
+                  value={formData.password}
+                  onChange={(e) => handleChange('password', e.target.value)}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => { setPasswordFocused(false); handleBlur('password'); }}
+                  autoComplete="new-password"
+                  className={`${inputClass('password')} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
-            <div className="relative">
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Confirm Password *"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-11 pr-4 py-3 text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 dark:bg-slate-800/60 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
-              />
+
+            <div>
+              <div className="relative">
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Confirm Password *"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  onBlur={() => handleBlur('confirmPassword')}
+                  autoComplete="new-password"
+                  className={inputClass('confirmPassword')}
+                />
+              </div>
+              <FieldError message={touched.confirmPassword ? errors.confirmPassword : ''} />
             </div>
           </div>
+
+          {/* Live password requirement checklist */}
+          {(passwordFocused || formData.password) && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-1.5">
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
+                Password Requirements
+              </p>
+              {passwordRules.map((rule) => (
+                <div key={rule.label} className="flex items-center gap-2 text-xs">
+                  {rule.met ? (
+                    <Check size={14} className="text-emerald-400 shrink-0" />
+                  ) : (
+                    <X size={14} className="text-slate-600 shrink-0" />
+                  )}
+                  <span className={rule.met ? 'text-emerald-400' : 'text-slate-500'}>{rule.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider hover:from-amber-400 transition shadow-lg mt-4"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider hover:from-amber-400 transition shadow-lg mt-4 disabled:opacity-60"
           >
-            {loading ? 'Sending OTP...' : 'Register & Verify Email'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="animate-spin" size={18} /> Sending OTP...
+              </span>
+            ) : 'Register & Verify Email'}
           </button>
 
           <p className="text-center text-sm text-slate-400 pt-2">
@@ -280,17 +511,25 @@ export function VerifyOtp() {
   const { loginSession } = useContext(AuthContext);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
   const targetEmail = sessionStorage.getItem('verifyEmail');
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
+    setServerError('');
+
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setServerError('Please enter the complete 6-digit OTP.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const response = await fetch(`${API_BASE}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail, otp })
+        body: JSON.stringify({ email: targetEmail, otp: otp.trim() })
       });
 
       const data = await response.json();
@@ -298,14 +537,13 @@ export function VerifyOtp() {
       if (data.success) {
         loginSession(data.token, data.user);
         sessionStorage.removeItem('verifyEmail');
-        alert('Email verified successfully!');
         navigate('/complete-profile');
       } else {
-        alert(data.message || 'Invalid OTP code.');
+        setServerError(data.message || 'Invalid OTP code.');
       }
     } catch (err) {
       console.error('OTP Verification Error:', err);
-      alert('Failed to verify OTP.');
+      setServerError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -320,13 +558,22 @@ export function VerifyOtp() {
           <span className="text-amber-400 font-semibold">{targetEmail || 'your email'}</span>
         </p>
 
+        {serverError && (
+          <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{serverError}</span>
+          </div>
+        )}
+
         <form onSubmit={handleVerifyOtp} className="space-y-6">
           <input
             type="text"
+            inputMode="numeric"
             placeholder="0 0 0 0 0 0"
             value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
             maxLength={6}
+            autoComplete="one-time-code"
             required
             className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-4 text-white text-center text-2xl font-mono tracking-[0.5em] focus:outline-none focus:border-amber-500"
           />
@@ -334,10 +581,22 @@ export function VerifyOtp() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg"
+            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg disabled:opacity-60"
           >
-            {loading ? 'Verifying...' : 'Verify OTP & Continue'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="animate-spin" size={18} /> Verifying...
+              </span>
+            ) : 'Verify OTP & Continue'}
           </button>
+
+          <p className="text-center text-xs text-slate-500">
+            Didn't receive it? Check your spam folder, or{' '}
+            <button type="button" onClick={() => navigate('/register')} className="text-amber-500 font-semibold hover:underline">
+              register again
+            </button>{' '}
+            to resend.
+          </p>
         </form>
       </div>
     </div>
@@ -352,6 +611,7 @@ export function CompleteProfilePage() {
   const { user, fetchUserSession } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const [addressQuery, setAddressQuery] = useState('');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
@@ -416,6 +676,7 @@ export function CompleteProfilePage() {
 
   const handleActivateSubscription = async () => {
     setSubscribing(true);
+    setServerError('');
     const token = localStorage.getItem('token');
 
     try {
@@ -429,14 +690,13 @@ export function CompleteProfilePage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('₹999/month Subscription Activated Successfully!');
         await fetchUserSession();
       } else {
-        alert(data.message || 'Subscription failed.');
+        setServerError(data.message || 'Subscription failed.');
       }
     } catch (err) {
       console.error('Subscription Error:', err);
-      alert('Failed to process subscription.');
+      setServerError('Failed to process subscription. Please try again.');
     } finally {
       setSubscribing(false);
     }
@@ -444,9 +704,31 @@ export function CompleteProfilePage() {
 
   const handleSubmitProfile = async (e) => {
     e.preventDefault();
+    setServerError('');
 
     if (!formData.city || !formData.pincode || !formData.perKgPrice) {
-      alert('Please fill out Location details and Per KG Shutter Price!');
+      setServerError('Please fill out location details and per-kg shutter price.');
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formData.pincode.trim())) {
+      setServerError('Pincode must be exactly 6 digits.');
+      return;
+    }
+
+    const priceValue = Number(formData.perKgPrice);
+    if (isNaN(priceValue) || priceValue <= 0) {
+      setServerError('Please enter a valid per-kg price.');
+      return;
+    }
+
+    if (formData.gstin.trim() && !/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(formData.gstin.trim().toUpperCase())) {
+      setServerError('Please enter a valid 15-character GSTIN, or leave it blank.');
+      return;
+    }
+
+    if (formData.pan.trim() && !/^[A-Z]{5}\d{4}[A-Z]{1}$/.test(formData.pan.trim().toUpperCase())) {
+      setServerError('Please enter a valid 10-character PAN, or leave it blank.');
       return;
     }
 
@@ -472,15 +754,14 @@ export function CompleteProfilePage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Workshop profile completed and published!');
         await fetchUserSession();
         navigate('/my-workshop');
       } else {
-        alert(data.message || 'Failed to complete profile.');
+        setServerError(data.message || 'Failed to complete profile.');
       }
     } catch (err) {
       console.error('Profile completion error:', err);
-      alert('Server error while saving workshop profile.');
+      setServerError('Server error while saving workshop profile.');
     } finally {
       setLoading(false);
     }
@@ -488,7 +769,7 @@ export function CompleteProfilePage() {
 
   if (user && !user.isSubscribed) {
     return (
-      <div className="min-h-[calc(100vh-5rem)]bg-white text-slate-900 dark:bg-slate-950 dark:text-white flex items-center justify-center p-4 py-12">
+      <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
         <div className="w-full max-w-xl bg-slate-900 border border-amber-500/30 rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-amber-500 text-slate-950 font-bold text-xs uppercase px-3 py-1 rounded-bl-lg flex items-center gap-1">
             <Sparkles size={14} /> Partner Tier
@@ -502,6 +783,13 @@ export function CompleteProfilePage() {
           <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
             Get listed on local customer shutter quote searches and directly receive verified customer inquiries.
           </p>
+
+          {serverError && (
+            <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl text-left">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <span>{serverError}</span>
+            </div>
+          )}
 
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-6 mb-8 text-left space-y-3">
             <div className="flex items-center gap-3 text-slate-200 text-sm">
@@ -533,7 +821,7 @@ export function CompleteProfilePage() {
           <button
             onClick={handleActivateSubscription}
             disabled={subscribing}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 hover:to-amber-300 transition shadow-xl flex items-center justify-center gap-2 uppercase tracking-wide"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 hover:to-amber-300 transition shadow-xl flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-60"
           >
             {subscribing ? <Loader2 className="animate-spin" /> : <><CreditCard size={20} /> Subscribe Now (₹999/mo) <ArrowRight size={20} /></>}
           </button>
@@ -549,6 +837,13 @@ export function CompleteProfilePage() {
         <p className="text-center text-slate-400 text-sm mb-8">
           Add your rates & location details so local customers can view your profile and contact you.
         </p>
+
+        {serverError && (
+          <div className="mb-6 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{serverError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmitProfile} className="space-y-6">
           <div>
@@ -632,9 +927,10 @@ export function CompleteProfilePage() {
                 />
                 <input
                   type="text"
+                  inputMode="numeric"
                   placeholder="Pincode *"
                   value={formData.pincode}
-                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
                   maxLength="6"
                   required
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-amber-500"
@@ -652,6 +948,7 @@ export function CompleteProfilePage() {
                 <IndianRupee size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500" />
                 <input
                   type="number"
+                  min="1"
                   placeholder="Per KG Price (₹) *"
                   value={formData.perKgPrice}
                   onChange={(e) => setFormData({ ...formData, perKgPrice: e.target.value })}
@@ -685,14 +982,16 @@ export function CompleteProfilePage() {
                 type="text"
                 placeholder="GSTIN Number (Optional)"
                 value={formData.gstin}
-                onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
+                maxLength={15}
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm uppercase focus:outline-none focus:border-amber-500"
               />
               <input
                 type="text"
                 placeholder="PAN Number (Optional)"
                 value={formData.pan}
-                onChange={(e) => setFormData({ ...formData, pan: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
+                maxLength={10}
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm uppercase focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -701,7 +1000,7 @@ export function CompleteProfilePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 transition shadow-xl uppercase tracking-wider"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 transition shadow-xl uppercase tracking-wider disabled:opacity-60"
           >
             {loading ? 'Publishing Profile...' : 'Complete & Publish Workshop Profile'}
           </button>

@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   isPhoneVerified: { type: Boolean, default: false },
   otp: { type: String },
   otpExpires: { type: Date },
+  otpAttempts: { type: Number, default: 0 }, // Brute-force protection counter
 
   // 3. Subscription Management (₹999/month tracking)
   isSubscribed: { type: Boolean, default: false },

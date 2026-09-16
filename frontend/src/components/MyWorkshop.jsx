@@ -1,258 +1,348 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
+import {
+  Building2, MapPin, Phone, IndianRupee, Edit3, Check, X,
+  Bell, LogOut, Loader2, Award, FileText, Calendar, Ruler,
+  MessageSquare, BellOff, RefreshCw, AlertCircle
+} from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
 
 export default function MyWorkshop() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Price update states
+  const { user, loading: authLoading, logout, fetchUserSession } = useContext(AuthContext);
+
   const [isEditingPrice, setIsEditingPrice] = useState(false);
-  const [perKgPrice, setPerKgPrice] = useState('');
+  const [newPrice, setNewPrice] = useState('');
   const [savingPrice, setSavingPrice] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator-backend.onrender.com';
-const BACKEND_URL = API_BASE; 
+  const [leads, setLeads] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [leadsLoading, setLeadsLoading] = useState(true);
+  const [leadsError, setLeadsError] = useState('');
 
-
-
+  // Redirect away only once the auth check has actually finished,
+  // otherwise we would bounce the dealer to /login during session restore.
   useEffect(() => {
-    fetchDealerData();
-  }, []);
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [authLoading, user, navigate]);
 
-  const fetchDealerData = async () => {
+  const fetchLeads = async (showSpinner = true) => {
+    if (showSpinner) setLeadsLoading(true);
+    setLeadsError('');
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setLeadsError('Session expired. Please log in again.');
+      setLeadsLoading(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
+      const response = await fetch(`${API_BASE}/api/auth/my-leads`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setLeads(data.leads || []);
+        setUnreadCount(data.unreadCount || 0);
+      } else {
+        setLeadsError(data.message || 'Could not load leads.');
       }
-
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-
-      // Fetch user profile & leads in parallel
-      const [profileRes, leadsRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/api/auth/profile`, config),
-        axios.get(`${BACKEND_URL}/api/auth/my-leads`, config)
-      ]);
-
-      setUser(profileRes.data.user || profileRes.data);
-      setPerKgPrice(profileRes.data.user?.perKgPrice || profileRes.data.perKgPrice || '');
-      setLeads(leadsRes.data.leads || leadsRes.data || []);
     } catch (err) {
-      console.error('Error fetching workshop data:', err);
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-      }
+      console.error('Fetch Leads Error:', err);
+      setLeadsError('Network error while loading leads.');
     } finally {
-      setLoading(false);
+      setLeadsLoading(false);
     }
   };
 
-  const handlePriceUpdate = async (e) => {
-    e.preventDefault();
+  // Initial fetch + poll every 30s so new customer inquiries appear
+  // without the dealer needing to reload the page.
+  useEffect(() => {
+    if (!user) return;
+
+    fetchLeads();
+    const interval = setInterval(() => fetchLeads(false), 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleStartEditPrice = () => {
+    setNewPrice(user?.perKgPrice || '');
+    setIsEditingPrice(true);
+  };
+
+  const handleCancelEditPrice = () => {
+    setIsEditingPrice(false);
+    setNewPrice('');
+  };
+
+  const handleSavePrice = async () => {
+    const priceValue = Number(newPrice);
+
+    if (!newPrice || isNaN(priceValue) || priceValue <= 0) {
+      alert('Please enter a valid positive price.');
+      return;
+    }
+
     setSavingPrice(true);
-    setMessage({ type: '', text: '' });
+    const token = localStorage.getItem('token');
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.put(
-        `${BACKEND_URL}/api/auth/update-price`,
-        { perKgPrice: Number(perKgPrice) },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await fetch(`${API_BASE}/api/auth/update-price`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ perKgPrice: priceValue })
+      });
 
-      setUser(res.data.user || { ...user, perKgPrice: Number(perKgPrice) });
-      setIsEditingPrice(false);
-      setMessage({ type: 'success', text: 'Per KG Price updated successfully across all listings!' });
+      const data = await response.json();
+
+      if (data.success) {
+        await fetchUserSession();
+        setIsEditingPrice(false);
+        setNewPrice('');
+      } else {
+        alert(data.message || 'Failed to update price.');
+      }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update price.' });
+      console.error('Update Price Error:', err);
+      alert('Server error while updating price.');
     } finally {
       setSavingPrice(false);
     }
   };
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to log out of your workshop?')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/login');
+    if (window.confirm('Are you sure you want to log out?')) {
+      logout();
     }
   };
 
-  if (loading) {
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-amber-500">
-        <div className="animate-spin rounded-full h-12 border-t-2 border-b-2 border-amber-500"></div>
+      <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="animate-spin text-amber-500" size={32} />
+        <p className="text-sm text-slate-400">Loading your workshop...</p>
       </div>
     );
   }
 
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-8">
-        
-        {/* Header Banner */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 py-10 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+
+        {/* Header Card */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-amber-500 flex items-center justify-center text-slate-950 font-black text-2xl shrink-0">
+                {user.companyName?.charAt(0) || user.name?.charAt(0) || 'D'}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <Building2 size={20} className="text-amber-500" /> {user.companyName || user.name}
+                </h1>
+                <p className="text-sm text-slate-400">Proprietor: {user.name}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-slate-700 hover:border-red-500/40 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+            >
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Workshop Details */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <h2 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+            <FileText size={16} /> Workshop Details
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div className="flex items-start gap-3 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+              <MapPin size={18} className="text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Location</p>
+                <p className="text-slate-200 font-medium">{user.address || `${user.area || ''}, ${user.city || ''}`}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+              <Phone size={18} className="text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Phone</p>
+                <p className="text-slate-200 font-medium">{user.phone}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+              <Award size={18} className="text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Experience</p>
+                <p className="text-slate-200 font-medium">{user.experienceYears || 'Not specified'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+              <Ruler size={18} className="text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Services</p>
+                <p className="text-slate-200 font-medium line-clamp-2">{user.servicesOffered || 'Not specified'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Editable Price Card */}
+        <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <h2 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+            <IndianRupee size={16} /> Per KG Shutter Price
+          </h2>
+
+          {!isEditingPrice ? (
+            <div className="flex items-center justify-between">
+              <div className="text-3xl font-black text-amber-400 flex items-center gap-1">
+                <IndianRupee size={26} />
+                <span>{user.perKgPrice || '0'}</span>
+                <span className="text-sm text-slate-400 font-normal ml-1">/ kg</span>
+              </div>
+              <button
+                onClick={handleStartEditPrice}
+                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2.5 rounded-xl text-sm font-bold transition"
+              >
+                <Edit3 size={16} /> Update Price
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="relative flex-1">
+                <IndianRupee size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type="number"
+                  autoFocus
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  placeholder="Enter new price"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-9 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSavePrice}
+                  disabled={savingPrice}
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition disabled:opacity-50"
+                >
+                  {savingPrice ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Save
+                </button>
+                <button
+                  onClick={handleCancelEditPrice}
+                  disabled={savingPrice}
+                  className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-xl text-sm font-bold transition border border-slate-700"
+                >
+                  <X size={16} /> Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-slate-500 mt-3">
+            This rate is shown to customers on your public profile and used in their price estimator.
+          </p>
+        </div>
+
+        {/* Leads / Notifications */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-amber-500 text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              <Bell size={16} /> Customer Leads
+            </h2>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-white">{user?.companyName || user?.name || 'Workshop Portal'}</h1>
-              <span className="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-full border border-amber-500/20">
-                {user?.businessType || 'Verified Dealer'}
-              </span>
-            </div>
-            <p className="text-slate-400 text-sm mt-1">
-              {user?.city ? `${user.city}, ${user.state}` : 'Location not set'} • {user?.category || 'Rolling Shutters & Gates'}
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 rounded-xl text-sm font-medium transition-all"
-          >
-            Logout Workshop
-          </button>
-        </div>
-
-        {message.text && (
-          <div className={`p-4 rounded-xl text-sm ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-            {message.text}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left Column: Workshop Details & Price Manager */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-              <h3 className="text-lg font-semibold text-white border-b border-slate-800 pb-3">Business Profile</h3>
-              
-              <div className="space-y-4 text-sm">
-                <div>
-                  <span className="text-slate-400 block text-xs">Owner Name</span>
-                  <span className="font-medium text-slate-200">{user?.name}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-xs">Phone Number</span>
-                  <span className="font-medium text-slate-200">{user?.phone}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-xs">Email Address</span>
-                  <span className="font-medium text-slate-200">{user?.email}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-xs">GSTIN / Tax ID</span>
-                  <span className="font-medium text-slate-200">{user?.gstin || 'Not Provided'}</span>
-                </div>
-              </div>
-
-              {/* Editable Price Section */}
-              <div className="pt-4 border-t border-slate-800">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-slate-300">Per KG Rate</span>
-                  {!isEditingPrice && (
-                    <button
-                      onClick={() => setIsEditingPrice(true)}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-semibold"
-                    >
-                      Edit Price
-                    </button>
-                  )}
-                </div>
-
-                {isEditingPrice ? (
-                  <form onSubmit={handlePriceUpdate} className="space-y-3">
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">₹</span>
-                      <input
-                        type="number"
-                        value={perKgPrice}
-                        onChange={(e) => setPerKgPrice(e.target.value)}
-                        className="w-full pl-8 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500 text-sm"
-                        placeholder="Enter rate"
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={savingPrice}
-                        className="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-xs transition-all"
-                      >
-                        {savingPrice ? 'Saving...' : 'Save'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingPrice(false)}
-                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="text-2xl font-bold text-amber-400">
-                    ₹{user?.perKgPrice || 0} <span className="text-xs font-normal text-slate-400">/ kg</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Leads / Notifications */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  Customer Leads & Inquiries
-                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
-                    {leads.length}
-                  </span>
-                </h3>
-              </div>
-
-              {leads.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm">
-                  No customer leads received yet. When customers submit shutter estimates near your area, they will appear here.
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                  {leads.map((lead) => (
-                    <div key={lead._id} className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 space-y-3 hover:border-slate-700 transition-all">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold text-white">{lead.name}</h4>
-                          <a href={`tel:${lead.phone}`} className="text-amber-400 text-sm hover:underline font-mono">
-                            📞 {lead.phone}
-                          </a>
-                        </div>
-                        <span className="text-xs text-slate-500">
-                          {new Date(lead.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/60 p-2.5 rounded-lg text-xs text-slate-300">
-                        <div><span className="text-slate-500 block">Width:</span> {lead.width || 'N/A'} {lead.unit}</div>
-                        <div><span className="text-slate-500 block">Height:</span> {lead.height || 'N/A'} {lead.unit}</div>
-                        <div><span className="text-slate-500 block">Type:</span> {lead.shutterType || 'Manual'}</div>
-                      </div>
-
-                      {lead.message && (
-                        <p className="text-xs text-slate-400 italic bg-slate-900/30 p-2 rounded">
-                          "{lead.message}"
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              {unreadCount > 0 && (
+                <span className="bg-amber-500 text-slate-950 text-xs font-bold px-2.5 py-1 rounded-full">
+                  {unreadCount} new
+                </span>
               )}
+              <button
+                onClick={() => fetchLeads()}
+                disabled={leadsLoading}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-amber-400 transition disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={leadsLoading ? 'animate-spin' : ''} /> Refresh
+              </button>
             </div>
           </div>
 
+          {leadsError && (
+            <div className="mb-4 flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{leadsError}</span>
+            </div>
+          )}
+
+          {leadsLoading ? (
+            <div className="text-center py-10 text-slate-400 flex flex-col items-center gap-2">
+              <Loader2 className="animate-spin text-amber-500" size={24} />
+              <span className="text-sm">Loading leads...</span>
+            </div>
+          ) : leads.length > 0 ? (
+            <div className="space-y-3">
+              {leads.map((lead) => (
+                <div
+                  key={lead._id}
+                  className={`rounded-xl p-4 border ${lead.isRead ? 'bg-slate-950/40 border-slate-800' : 'bg-amber-500/5 border-amber-500/30'}`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={16} className="text-amber-500 shrink-0" />
+                      <span className="font-bold text-white text-sm">{lead.name}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1 shrink-0">
+                      <Calendar size={12} /> {formatDate(lead.createdAt)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 mb-2">
+                    <span><strong className="text-slate-500">Phone:</strong> {lead.phone}</span>
+                    <span><strong className="text-slate-500">Size:</strong> {lead.width || '-'} x {lead.height || '-'} {lead.unit}</span>
+                    <span><strong className="text-slate-500">Type:</strong> {lead.shutterType}</span>
+                  </div>
+                  {lead.message && (
+                    <p className="text-xs text-slate-400 border-t border-slate-800 pt-2 mt-2">{lead.message}</p>
+                  )}
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-amber-400 hover:text-amber-300"
+                  >
+                    <Phone size={12} /> Call back
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-slate-500">
+              <BellOff size={32} className="mx-auto mb-2 text-slate-600" />
+              <p className="text-sm">No customer leads yet. New inquiries will show up here.</p>
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );
