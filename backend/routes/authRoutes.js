@@ -191,7 +191,7 @@ router.put('/complete-profile', verifyToken, async (req, res) => {
   }
 });
 
-// 6. GET CURRENT USER SESSION (/me and /profile endpoints to prevent 404)
+// 6. GET CURRENT USER SESSION
 const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password -otp -otpExpires');
@@ -237,5 +237,90 @@ router.put('/update-price', verifyToken, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error updating price.' });
   }
 });
+
+// 9. FORGOT PASSWORD (SEND OTP)
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User with this email does not exist.' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
+    await user.save();
+
+    // Send Reset OTP via Brevo
+    if (process.env.BREVO_API_KEY && process.env.EMAIL_USER) {
+      try {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+          },
+          body: JSON.stringify({
+            sender: { name: "Tameer Fabricators", email: process.env.EMAIL_USER },
+            to: [{ email: user.email, name: user.name }],
+            subject: "Password Reset OTP - Tameer Fabricators",
+            htmlContent: `<h3>Password Reset Code</h3><p>Your 6-digit password reset code is: <strong>${otp}</strong></p>`
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Reset OTP Email Send Failed:', emailErr.message);
+      }
+    }
+
+    return res.status(200).json({ success: true, message: 'Password reset OTP sent to email.' });
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error during password reset request.' });
+  }
+});
+
+// 10. RESET PASSWORD (VERIFY OTP & SAVE NEW PASSWORD)
+// 10. RESET PASSWORD (VERIFY OTP & SAVE NEW PASSWORD)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Check OTP and Expiry
+    if (!user.otp || user.otp !== otp || user.otpExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
+    // Clear OTP fields
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password reset successfully!' });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error resetting password.' });
+  }
+});
+
+module.exports = router;
 
 module.exports = router;

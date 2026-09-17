@@ -3,16 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
   Mail, Lock, User, Building2, MapPin, Phone, 
-  FileText, Eye, EyeOff, Search, Loader2, IndianRupee,
-  CheckCircle, CreditCard, Sparkles, ArrowRight, AlertCircle, Check, X
+  Eye, EyeOff, Loader2, IndianRupee,
+  CreditCard, Sparkles, ArrowRight, AlertCircle, Check, X
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://tameer-fabricator-backend.onrender.com';
 
 // ==========================================
 // SHARED VALIDATION HELPERS
-// Mirrors the server-side rules so users get instant feedback,
-// but the server remains the actual source of truth.
 // ==========================================
 const DISPOSABLE_DOMAINS = [
   'mailinator.com', 'yopmail.com', 'guerrillamail.com', 'sharklasers.com',
@@ -63,8 +61,6 @@ const validateNameField = (value, label) => {
   return '';
 };
 
-// Returns the individual password rules and whether each is met,
-// so the UI can render a live checklist.
 const getPasswordRules = (password) => ([
   { label: 'At least 8 characters', met: password.length >= 8 },
   { label: 'One uppercase letter (A-Z)', met: /[A-Z]/.test(password) },
@@ -80,7 +76,6 @@ const validatePasswordField = (password) => {
   return '';
 };
 
-// Small reusable inline error line
 const FieldError = ({ message }) => {
   if (!message) return null;
   return (
@@ -188,6 +183,16 @@ export function LoginPage() {
             </button>
           </div>
 
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              className="text-xs text-amber-500 hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -227,8 +232,6 @@ export function SignupPage() {
     confirmPassword: ''
   });
 
-  // Tracks which fields the user has interacted with, so we don't
-  // show errors on fields they haven't reached yet.
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -253,12 +256,10 @@ export function SignupPage() {
     const updated = { ...formData, [field]: value };
     setFormData(updated);
 
-    // Re-validate this field live once it has been touched
     if (touched[field]) {
       setErrors((prev) => ({ ...prev, [field]: validateField(field, value, updated) }));
     }
 
-    // Keep confirmPassword in sync when the main password changes
     if (field === 'password' && touched.confirmPassword) {
       setErrors((prev) => ({
         ...prev,
@@ -314,7 +315,6 @@ export function SignupPage() {
         sessionStorage.setItem('verifyEmail', data.email || formData.email.trim().toLowerCase());
         navigate('/verify-otp');
       } else {
-        // Map server-side field errors back onto the matching input
         if (data.field) {
           setErrors((prev) => ({ ...prev, [data.field]: data.message }));
           setTouched((prev) => ({ ...prev, [data.field]: true }));
@@ -460,7 +460,6 @@ export function SignupPage() {
             </div>
           </div>
 
-          {/* Live password requirement checklist */}
           {(passwordFocused || formData.password) && (
             <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-1.5">
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
@@ -781,8 +780,19 @@ export function CompleteProfilePage() {
 
           <h2 className="text-3xl font-bold text-white mb-2">Activate Partner Subscription</h2>
           <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
-            Get listed on local customer shutter quote searches and directly receive verified customer inquiries.
+            Unlock direct customer quote requests, lead management tools, and priority listing across your operational territory.
           </p>
+
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 mb-6 text-left space-y-3">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-400">Annual Workshop Membership</span>
+              <span className="text-white font-bold flex items-center"><IndianRupee size={15} /> 2,999 / year</span>
+            </div>
+            <div className="flex justify-between items-center text-sm border-t border-slate-800 pt-3">
+              <span className="text-slate-400">Lead Commission Fee</span>
+              <span className="text-emerald-400 font-semibold">0% Commission</span>
+            </div>
+          </div>
 
           {serverError && (
             <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl text-left">
@@ -791,39 +801,20 @@ export function CompleteProfilePage() {
             </div>
           )}
 
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-6 mb-8 text-left space-y-3">
-            <div className="flex items-center gap-3 text-slate-200 text-sm">
-              <CheckCircle className="text-amber-500 shrink-0" size={18} />
-              <span>Priority Listing in Customer Location Searches</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-200 text-sm">
-              <CheckCircle className="text-amber-500 shrink-0" size={18} />
-              <span>Direct Commercial Shutter Quote Inquiries</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-200 text-sm">
-              <CheckCircle className="text-amber-500 shrink-0" size={18} />
-              <span>Public Dealer Profile Showcase & Verified Badge</span>
-            </div>
-
-            <div className="border-t border-slate-700 pt-4 mt-4 flex justify-between items-center">
-              <div>
-                <span className="text-xs text-slate-400 uppercase tracking-wider block">Monthly Partner Plan</span>
-                <span className="text-2xl font-bold text-amber-400 flex items-center">
-                  ₹999 <span className="text-xs text-slate-400 font-normal ml-1">/ month</span>
-                </span>
-              </div>
-              <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                Cancel Anytime
-              </span>
-            </div>
-          </div>
-
           <button
             onClick={handleActivateSubscription}
             disabled={subscribing}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 hover:to-amber-300 transition shadow-xl flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-60"
+            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-4 rounded-xl font-bold uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            {subscribing ? <Loader2 className="animate-spin" /> : <><CreditCard size={20} /> Subscribe Now (₹999/mo) <ArrowRight size={20} /></>}
+            {subscribing ? (
+              <>
+                <Loader2 className="animate-spin" size={20} /> Processing Payment...
+              </>
+            ) : (
+              <>
+                Pay ₹2,999 & Activate Partner Account <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -831,12 +822,10 @@ export function CompleteProfilePage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 p-4 py-12">
+      <div className="w-full max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-white text-center mb-2">Complete Workshop Profile</h2>
-        <p className="text-center text-slate-400 text-sm mb-8">
-          Add your rates & location details so local customers can view your profile and contact you.
-        </p>
+        <p className="text-center text-slate-400 text-sm mb-8">Provide your manufacturing details so customers can request precise shutter quotes</p>
 
         {serverError && (
           <div className="mb-6 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
@@ -846,153 +835,166 @@ export function CompleteProfilePage() {
         )}
 
         <form onSubmit={handleSubmitProfile} className="space-y-6">
-          <div>
-            <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Building2 size={16} /> Workshop Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Business Type</label>
               <select
                 value={formData.businessType}
                 onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white text-sm focus:outline-none focus:border-amber-500"
               >
-                <option value="Proprietorship">Proprietorship Workshop</option>
+                <option value="Proprietorship">Proprietorship</option>
                 <option value="Partnership">Partnership</option>
                 <option value="Private Limited">Private Limited</option>
-                <option value="Individual Fabricator">Individual Fabricator</option>
+                <option value="Independent Fabricator">Independent Fabricator</option>
               </select>
+            </div>
 
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Years of Experience</label>
               <input
-                type="text"
-                placeholder="Years in Business (e.g., 8 Years)"
+                type="number"
+                min="0"
+                max="50"
+                placeholder="e.g. 8"
                 value={formData.experienceYears}
                 onChange={(e) => setFormData({ ...formData, experienceYears: e.target.value })}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
 
-          <div>
-            <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <MapPin size={16} /> Workshop Location (Search & Select)
-            </h3>
-            <div className="space-y-4">
-              <div className="relative">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-                <input
-                  type="text"
-                  placeholder="Type shop address / area / city to search *"
-                  value={addressQuery}
-                  onChange={(e) => {
-                    setAddressQuery(e.target.value);
-                    setFormData({ ...formData, address: e.target.value });
-                  }}
-                  required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-10 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-                />
-                {isSearchingAddress && <Loader2 size={18} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-amber-500" />}
+          <div className="relative">
+            <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Workshop Address & Location Lookup</label>
+            <div className="relative">
+              <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+              <input
+                type="text"
+                placeholder="Start typing your shop address or area..."
+                value={addressQuery}
+                onChange={(e) => setAddressQuery(e.target.value)}
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-10 py-3.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+              />
+              {isSearchingAddress && (
+                <Loader2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 animate-spin" />
+              )}
+            </div>
 
-                {addressSuggestions.length > 0 && (
-                  <ul className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                    {addressSuggestions.map((item, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleSelectAddress(item)}
-                        className="px-4 py-3 text-sm text-slate-200 hover:bg-slate-700 hover:text-amber-400 cursor-pointer border-b border-slate-700/50 last:border-none flex items-start gap-2"
-                      >
-                        <MapPin size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{item.display_name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            {addressSuggestions.length > 0 && (
+              <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                {addressSuggestions.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectAddress(item)}
+                    className="w-full text-left px-4 py-3 text-xs text-slate-200 hover:bg-slate-700 border-b border-slate-700/50 last:border-0 flex items-start gap-2"
+                  >
+                    <MapPin size={14} className="shrink-0 mt-0.5 text-amber-400" />
+                    <span>{item.display_name}</span>
+                  </button>
+                ))}
               </div>
+            )}
+          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  type="text"
-                  placeholder="Area / Locality *"
-                  value={formData.area}
-                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                  required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-                />
-                <input
-                  type="text"
-                  placeholder="City *"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-                />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Pincode *"
-                  value={formData.pincode}
-                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
-                  maxLength="6"
-                  required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-amber-500"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">City / Town *</label>
+              <input
+                type="text"
+                placeholder="e.g. Bareilly"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">State</label>
+              <input
+                type="text"
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Pincode *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="243001"
+                value={formData.pincode}
+                onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
+              />
             </div>
           </div>
 
-          <div>
-            <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <IndianRupee size={16} /> Rates & Offerings
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Base Shutter Price (₹ per KG) *</label>
               <div className="relative">
-                <IndianRupee size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500" />
+                <IndianRupee size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
                 <input
                   type="number"
-                  min="1"
-                  placeholder="Per KG Price (₹) *"
+                  placeholder="e.g. 110"
                   value={formData.perKgPrice}
                   onChange={(e) => setFormData({ ...formData, perKgPrice: e.target.value })}
                   required
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-9 pr-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Pricing Highlight / Note</label>
               <input
                 type="text"
-                placeholder="Pricing Highlight (e.g. @ ₹250/sq ft)"
+                placeholder="e.g. Includes powder coating & heavy spring"
                 value={formData.pricingDetails}
                 onChange={(e) => setFormData({ ...formData, pricingDetails: e.target.value })}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
-              />
-              <input
-                type="text"
-                placeholder="Services Offered"
-                value={formData.servicesOffered}
-                onChange={(e) => setFormData({ ...formData, servicesOffered: e.target.value })}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
 
           <div>
-            <h3 className="text-amber-500 text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <FileText size={16} /> Tax & Compliance Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Services Offered</label>
+            <input
+              type="text"
+              value={formData.servicesOffered}
+              onChange={(e) => setFormData({ ...formData, servicesOffered: e.target.value })}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">GSTIN Number (Optional)</label>
               <input
                 type="text"
-                placeholder="GSTIN Number (Optional)"
+                maxLength={15}
+                placeholder="09AAAAA0000A1Z5"
                 value={formData.gstin}
                 onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
-                maxLength={15}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm uppercase focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-500 text-sm uppercase focus:outline-none focus:border-amber-500 font-mono"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">PAN Number (Optional)</label>
               <input
                 type="text"
-                placeholder="PAN Number (Optional)"
+                maxLength={10}
+                placeholder="AAAAA0000A"
                 value={formData.pan}
                 onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
-                maxLength={10}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm uppercase focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3.5 text-white placeholder-slate-500 text-sm uppercase focus:outline-none focus:border-amber-500 font-mono"
               />
             </div>
           </div>
@@ -1000,20 +1002,212 @@ export function CompleteProfilePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold py-4 rounded-xl text-lg hover:from-amber-400 transition shadow-xl uppercase tracking-wider disabled:opacity-60"
+            className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-4 rounded-xl font-bold uppercase tracking-wider transition shadow-lg mt-6 disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {loading ? 'Publishing Profile...' : 'Complete & Publish Workshop Profile'}
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} /> Saving Profile...
+              </>
+            ) : (
+              <>
+                Save Profile & Open Workshop Dashboard <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
       </div>
     </div>
   );
 }
+// ==========================================
+// 5. FORGOT PASSWORD COMPONENT (UPDATED WITH OTP & NEW PASSWORD)
+// ==========================================
+export function ForgotPasswordPage() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1); // Step 1: Request OTP, Step 2: Verify OTP & Reset Password
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [serverError, setServerError] = useState('');
 
-export function AuthCard({ mode = 'login' }) {
-  if (mode === 'signup') return <SignupPage />;
-  if (mode === 'verify-otp') return <VerifyOtp />;
-  return <LoginPage />;
+  // Step 1: Request OTP handler
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    setServerError('');
+    setMessage('');
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage('OTP has been sent to your email.');
+        setStep(2); // Move to OTP input step
+      } else {
+        setServerError(data.message || 'Failed to send reset email.');
+      }
+    } catch (err) {
+      console.error('Forgot Password Error:', err);
+      setServerError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP & Reset Password handler
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setServerError('');
+    setMessage('');
+
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setServerError('Please enter a valid 6-digit OTP.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setServerError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          otp: otp.trim(),
+          newPassword: newPassword
+        })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage('Password reset successful! Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        setServerError(data.message || 'Failed to reset password.');
+      }
+    } catch (err) {
+      console.error('Reset Password Error:', err);
+      setServerError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+        <h2 className="text-3xl font-bold text-white text-center mb-2">Reset Password</h2>
+        <p className="text-center text-slate-400 text-sm mb-6">
+          {step === 1 ? 'Enter your registered email to receive OTP' : `Enter OTP sent to ${email}`}
+        </p>
+
+        {serverError && (
+          <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-3 rounded-xl">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{serverError}</span>
+          </div>
+        )}
+
+        {message && (
+          <div className="mb-5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-4 py-3 rounded-xl">
+            {message}
+          </div>
+        )}
+
+        {step === 1 ? (
+          // STEP 1 FORM: Request Email OTP
+          <form onSubmit={handleRequestOtp} className="space-y-4">
+            <div className="relative">
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+              <input
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg disabled:opacity-60"
+            >
+              {loading ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+          </form>
+        ) : (
+          // STEP 2 FORM: Enter OTP & New Password
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">6-Digit OTP</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                required
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-white text-center text-xl font-mono tracking-[0.3em] focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">New Password</label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type="password"
+                  placeholder="At least 8 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-11 pr-4 py-3.5 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3.5 rounded-lg font-bold uppercase tracking-wider transition shadow-lg disabled:opacity-60 mt-2"
+            >
+              {loading ? 'Resetting Password...' : 'Reset Password'}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="w-full text-center text-xs text-slate-400 hover:text-amber-500 pt-2"
+            >
+              ← Back to enter different email
+            </button>
+          </form>
+        )}
+
+        <p className="text-center text-sm text-slate-400 pt-6 border-t border-slate-800 mt-6">
+          Remembered password?{' '}
+          <button type="button" onClick={() => navigate('/login')} className="text-amber-500 font-semibold hover:underline">
+            Log In
+          </button>
+        </p>
+      </div>
+    </div>
+  );
 }
-
-export default AuthCard;

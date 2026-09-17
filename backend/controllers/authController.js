@@ -10,6 +10,156 @@ const {
   verifyDomainHasMailServer
 } = require('../utils/validators');
 
+// 9. FORGOT PASSWORD - Request OTP
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+
+    let query;
+    if (email) {
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({ success: false, message: 'Invalid email address.' });
+      }
+      query = { email: emailCheck.value };
+    } else if (phone) {
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.valid) {
+        return res.status(400).json({ success: false, message: 'Invalid mobile number.' });
+      }
+      query = { phone: phoneCheck.value };
+    } else {
+      return res.status(400).json({ success: false, message: 'Email or mobile number is required.' });
+    }
+
+    const user = await User.findOne(query);
+
+    // Don't reveal whether the account exists
+    if (!user || !user.isVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists, a reset OTP has been sent.'
+      });
+    }
+
+    // Reuse the same OTP throttle as registration
+    if (user.otpExpires) {
+      const otpIssuedAt = new Date(user.otpExpires).getTime() - 10 * 60 * 1000;
+      const secondsSinceLastOtp = (Date.now() - otpIssuedAt) / 1000;
+      if (secondsSinceLastOtp < 60) {
+        const waitSeconds = Math.ceil(60 - secondsSinceLastOtp);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${waitSeconds} second(s) before requesting another OTP.`
+        });
+      }
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpAttempts = 0;
+    // Mark this OTP as a reset OTP so verifyOtp (login flow) can't be reused for it
+    user.otpPurpose = 'reset';
+    await user.save();
+
+    console.log(`\n[RESET OTP for ${user.email}]: ${otp}\n`);
+
+    sendBrevoEmail({
+      toEmail: user.email,
+      toName: user.name,
+      subject: 'Password Reset OTP - Tameer Fabricators',
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff;">
+          <h2 style="color: #f59e0b;">Password Reset Request</h2>
+          <p>Hello ${user.name},</p>
+          <p>Your OTP to reset your password is:</p>
+          <h1 style="color: #f59e0b; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+          <p>This OTP is valid for 10 minutes. If you did not request this, please ignore this email and your password will remain unchanged.</p>
+        </div>
+      `
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists, a reset OTP has been sent.',
+      email: user.email,
+      ...(process.env.NODE_ENV !== 'production' ? { demoOtp: otp } : {})
+    });
+
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while processing request.' });
+  }
+};
+
+// 10. RESET PASSWORD - Verify OTP + set new password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, phone, otp, newPassword } = req.body;
+
+    if (!otp || !/^\d{6}$/.test(String(otp).trim())) {
+      return res.status(400).json({ success: false, message: 'Please enter the 6-digit OTP.' });
+    }
+
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.valid) {
+      return res.status(400).json({ success: false, field: 'newPassword', message: passwordCheck.message });
+    }
+
+    let query;
+    if (email) {
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.valid) return res.status(400).json({ success: false, message: 'Invalid email address.' });
+      query = { email: emailCheck.value };
+    } else if (phone) {
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.valid) return res.status(400).json({ success: false, message: 'Invalid mobile number.' });
+      query = { phone: phoneCheck.value };
+    } else {
+      return res.status(400).json({ success: false, message: 'Email or mobile number is required.' });
+    }
+
+    const user = await User.findOne(query);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    if ((user.otpAttempts || 0) >= 5) {
+      return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please request a new OTP.' });
+    }
+
+    if (!user.otpExpires || user.otpExpires < Date.now() || user.otpPurpose !== 'reset') {
+      return res.status(400).json({ success: false, message: 'This OTP has expired. Please request a new one.' });
+    }
+
+    if (user.otp !== String(otp).trim()) {
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      await user.save();
+      const remaining = Math.max(0, 5 - user.otpAttempts);
+      return res.status(400).json({
+        success: false,
+        message: remaining > 0 ? `Incorrect OTP. ${remaining} attempt(s) remaining.` : 'Too many incorrect attempts. Please request a new OTP.'
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    user.otpAttempts = 0;
+    user.otpPurpose = undefined;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password reset successfully! Please log in.' });
+
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while resetting password.' });
+  }
+};
+
+
 // Helper: JWT Generator (30 Days Validity)
 const generateToken = (id, email) => {
   return jwt.sign(
