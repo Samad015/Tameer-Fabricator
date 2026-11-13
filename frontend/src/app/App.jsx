@@ -9,7 +9,7 @@ import About from '../features/catalog/About.jsx';
 import Services from '../features/catalog/Services.jsx';
 import Estimator from '../features/quotes/Estimator.jsx';
 import Specifications from '../features/catalog/Specifications.jsx';
-import ContactForm from '../features/quotes/ContactForm.jsx';
+import Contact from '../features/quotes/Contact.jsx';
 import Footer from '../components/layout/Footer.jsx';
 
 import {
@@ -48,10 +48,7 @@ export default function App() {
                   <Services />
                   <Estimator />
                   <About />
-                  <section className="contact-section">
-                    <div><p className="eyebrow">We’re here to help</p><h2>What are you working on?</h2><p>Leave your details and tell us a little about your project. Not sure about measurements? You can add those later.</p></div>
-                    <ContactForm />
-                  </section>
+                  <Contact />
                   <Specifications />
                 </main>
               }

@@ -1,317 +1,118 @@
-import {readLocation} from '../../shared/location.js';
-import React, { useState } from "react";
-import { Send, CheckCircle2, AlertCircle, Loader2, Ruler } from "lucide-react";
+import React, { useId, useRef, useState } from 'react';
+import { UserRound, Phone, Ruler, ChevronDown, Send, Weight, Loader2 } from 'lucide-react';
+import { API_BASE } from '../../shared/api.js';
+import { readLocation } from '../../shared/location.js';
+import { kgPerSquareFoot } from './weight.js';
+
+const initial = { name: '', phone: '', width: '', height: '', unit: 'Feet', shutterType: 'Manual', message: '' };
+
+function Field({ label, icon: Icon, ...props }) {
+  return (
+    <label className="grid min-w-0 gap-2">
+      <span>{label}</span>
+      <span className="relative">
+        <Icon size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+        <input className="quote-control pl-10" {...props} />
+      </span>
+    </label>
+  );
+}
+
+function Choice({ label, options, value, onChange }) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const trigger = useRef(null);
+  return (
+    <div className="relative grid gap-2" onBlur={e => {
+      if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+    }} onKeyDown={e => {
+      if (e.key === 'Escape') { setOpen(false); trigger.current.focus(); }
+    }}>
+      <span id={id}>{label}</span>
+      <button type="button" ref={trigger} aria-labelledby={id + ' ' + id + '-value'} aria-expanded={open}
+        onClick={() => setOpen(!open)} className="quote-control flex items-center justify-between px-3">
+        <span id={id + '-value'}>{value === 'Motorized' ? 'Motorized / automatic' : value}</span><ChevronDown size={16} />
+      </button>
+      {open && <div className="absolute inset-x-0 top-full z-20 mt-1 rounded-lg border border-[#475569] bg-[#182437] p-1 shadow-xl">
+        {options.map(option => <button type="button" key={option} aria-pressed={option === value}
+          className="block w-full rounded-md px-3 py-2 text-left hover:bg-[#334155] focus:bg-[#334155] aria-pressed:text-[#fbbf24]"
+          onClick={() => { onChange(option); setOpen(false); trigger.current.focus(); }}>
+          {option === 'Motorized' ? 'Motorized / automatic' : option}
+        </button>)}
+      </div>}
+    </div>
+  );
+}
 
 export default function ContactForm() {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    width: "",
-    height: "",
-    unit: "Feet",
-    shutterType: "",
-    message: "",
-  });
-
-  const [status, setStatus] = useState({ type: null, message: "" });
-  const [loading, setLoading] = useState(false);
-  const [showShutterPopup, setShowShutterPopup] = useState(false);
-  const [showUnitPopup, setShowUnitPopup] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const [form, setForm] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState(null);
+  const update = (key, value) => {
+    setForm(previous => ({ ...previous, [key]: value }));
+    setStatus(null);
   };
+  const bind = name => ({ name, value: form[name], onChange: e => update(name, e.target.value) });
+  const dimensionsValid = [form.width, form.height].every(n => Number(n) > 0 && Number(n) <= 10000);
+  const area = form.width * form.height / (form.unit === 'Inches' ? 144 : 1);
+  const weight = area * kgPerSquareFoot(form.shutterType.toLowerCase());
 
-  const handleShutterSelect = (type) => {
-    setFormData({
-      ...formData,
-      shutterType: type,
-    });
-    setShowShutterPopup(false);
-  };
-
-  const handleUnitSelect = (unitValue) => {
-    setFormData({
-      ...formData,
-      unit: unitValue,
-    });
-    setShowUnitPopup(false);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.name.trim() || !formData.phone.trim()) {
-      setStatus({
-        type: "error",
-        message: "Name and Phone number are required fields.",
-      });
-      return;
-    }
-
-    setLoading(true);
-    setStatus({ type: null, message: "" });
-
+  async function submit(event) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setStatus(null);
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({...formData, location:readLocation() || undefined}),
+      const response = await fetch(API_BASE + '/api/contact', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, location: readLocation() || undefined })
       });
       const data = await response.json();
-
       if (response.ok && data.success) {
-        setStatus({
-          type: "success",
-          message: data.message || "Quote request submitted successfully!",
-        });
-        setFormData({
-          name: "",
-          phone: "",
-          width: "",
-          height: "",
-          unit: "Feet",
-          shutterType: "",
-          message: "",
-        });
+        setForm(initial);
+        setStatus({ text: 'Request received. We’ll call you about your shutter.' });
       } else {
-        setStatus({
-          type: "error",
-          message: data.message || "Failed to submit quote request.",
-        });
+        setStatus({ error: true, text: data.message || 'Please check your details and try again.' });
       }
-    } catch (error) {
-      console.error("Submission Error:", error);
-      setStatus({
-        type: "error",
-        message:
-          "We couldn’t send your request. Please try again in a moment.",
-      });
+    } catch {
+      setStatus({ error: true, text: 'We couldn’t send your request. Please try again.' });
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} id="contact-form" className="space-y-3 max-w-md mx-auto">
-      {status.message && (
-        <div
-          className={`p-3 rounded-lg flex items-center gap-2 text-xs font-semibold ${
-            status.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-              : "bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400"
-          }`}
-        >
-          {status.type === "success" ? (
-            <CheckCircle2 size={16} />
-          ) : (
-            <AlertCircle size={16} />
-          )}
-          <span>{status.message}</span>
+    <form onSubmit={submit} className="quote-card rounded-2xl border border-[#f59e0b40] bg-[#0f172ae8] p-5 text-sm text-[#e2e8f0] shadow-2xl backdrop-blur-md sm:p-8">
+      <fieldset disabled={busy} className="grid min-w-0 gap-5">
+        <legend className="mb-5 text-xl font-semibold">Request a shutter quote</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Full name" icon={UserRound} autoComplete="name" placeholder="Your name" required maxLength={100} {...bind('name')} />
+          <Field label="Phone number" icon={Phone} type="tel" autoComplete="tel" placeholder="Mobile number" required maxLength={22} {...bind('phone')} />
         </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-            Full Name *
-          </label>
-          <input
-            type="text"
-            name="name"
-            required
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Your name"
-            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-            Phone Number *
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            required
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="+91 00000 00000"
-            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-            Width
-          </label>
-          <input
-            type="number"
-            name="width"
-            value={formData.width}
-            onChange={handleChange}
-            placeholder="e.g. 10"
-            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-            Height
-          </label>
-          <input
-            type="number"
-            name="height"
-            value={formData.height}
-            onChange={handleChange}
-            placeholder="e.g. 8"
-            className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition"
-          />
-        </div>
-      </div>
-
-      {/* Unit Selection (Feet / Inches) - NEW FIELD ADDED FOR EMAIL DATA */}
-      <div>
-        <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-          Unit
-        </label>
-        <button
-          type="button"
-          onClick={() => setShowUnitPopup(true)}
-          className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-left text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer flex items-center gap-2"
-        >
-          <Ruler size={14} className="text-amber-500" />
-          {formData.unit}
-        </button>
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-          Shutter Type
-        </label>
-        <button
-          type="button"
-          onClick={() => setShowShutterPopup(true)}
-          className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-left text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition hover:border-amber-500 cursor-pointer"
-        >
-          {formData.shutterType ? formData.shutterType : "Select Shutter Type"}
-        </button>
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-200">
-          Requirements / Project Specs
-        </label>
-        <textarea
-          name="message"
-          rows="3"
-          value={formData.message}
-          onChange={handleChange}
-          placeholder="Describe your requirement..."
-          className="w-full bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition resize-none"
-        ></textarea>
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-amber-500 text-slate-950 font-black py-2.5 rounded-lg hover:bg-amber-400 transition text-sm flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? (
-          <>
-            <Loader2 size={16} className="animate-spin" /> Submitting...
-          </>
-        ) : (
-          <>
-            <Send size={16} /> Submit Quote Request
-          </>
-        )}
-      </button>
-
-      {showShutterPopup && (
-        <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowShutterPopup(false)}
-        >
-          <div
-            className="bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-xl p-4 w-full max-w-xs"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
-              Select Shutter Type
-            </h3>
-            <div className="space-y-2">
-              {["Manual", "Gear", "Motorized"].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => handleShutterSelect(type)}
-                  className={`w-full text-left p-2 text-sm rounded-lg border transition cursor-pointer ${
-                    formData.shutterType === type
-                      ? "bg-amber-500 border-amber-500 text-slate-950 font-bold"
-                      : "bg-slate-100 border-slate-300 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white hover:border-amber-500"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowShutterPopup(false)}
-              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-500 transition cursor-pointer"
-            >
-              Cancel
-            </button>
+        <fieldset className="grid min-w-0 gap-4 border-t border-[#ffffff20] pt-3">
+          <legend className="pr-3 font-semibold">Opening details <small className="font-normal text-[#94a3b8]">Optional</small></legend>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {['width', 'height'].map(key => <Field key={key} label={key === 'width' ? 'Width' : 'Height'} icon={Ruler}
+              type="number" inputMode="decimal" step="any" min="0.000001" max="10000" placeholder="0" {...bind(key)} />)}
+            <Choice label="Unit" value={form.unit} options={['Feet', 'Inches']} onChange={v => update('unit', v)} />
           </div>
+          <Choice label="Shutter type" value={form.shutterType} options={['Manual', 'Gear', 'Motorized']} onChange={v => update('shutterType', v)} />
+        </fieldset>
+        <div className="flex items-center gap-3 rounded-xl border border-[#f59e0b45] bg-[#f59e0b0d] p-3">
+          <Weight size={21} className="shrink-0 text-[#fbbf24]" />
+          <div><span className="font-medium">Estimated shutter weight</span>
+            <p className="text-xs text-[#cbd5e1]">{dimensionsValid ? 'Approximate, based on opening size and shutter type.' : 'Enter width and height for an estimate.'}</p></div>
+          <output className="ml-auto shrink-0 font-semibold tabular-nums text-[#fbbf24]">{dimensionsValid ? weight.toLocaleString('en-IN', { maximumFractionDigits: 1 }) + ' kg' : '—'}</output>
         </div>
-      )}
-
-      {/* Unit Selection Popup - NEW POPUP ADDED */}
-      {showUnitPopup && (
-        <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowUnitPopup(false)}
-        >
-          <div
-            className="bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-xl p-4 w-full max-w-xs"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
-              Select Unit
-            </h3>
-            <div className="space-y-2">
-              {["Feet", "Inches"].map((unitOption) => (
-                <button
-                  key={unitOption}
-                  type="button"
-                  onClick={() => handleUnitSelect(unitOption)}
-                  className={`w-full text-left p-2 text-sm rounded-lg border transition cursor-pointer ${
-                    formData.unit === unitOption
-                      ? "bg-amber-500 border-amber-500 text-slate-950 font-bold"
-                      : "bg-slate-100 border-slate-300 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white hover:border-amber-500"
-                  }`}
-                >
-                  {unitOption}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowUnitPopup(false)}
-              className="w-full mt-3 p-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-500 transition cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+        <label className="grid gap-2">Requirements (optional)
+          <textarea rows={3} maxLength={2000} placeholder="Installation location, finish or anything else we should know" className="quote-control resize-y p-3" {...bind('message')} />
+        </label>
+        <button className="quote-submit flex min-h-12 items-center justify-center gap-2 rounded-lg font-bold motion-safe:transition-transform motion-safe:hover:scale-[1.01] disabled:opacity-70">
+          {busy ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
+          {busy ? 'Sending request…' : 'Submit Quote Request'}
+        </button>
+      </fieldset>
+      {status && <p role={status.error ? 'alert' : 'status'} className={'mt-4 ' + (status.error ? 'text-[#fda4af]' : 'text-[#86efac]')}>{status.text}</p>}
     </form>
   );
 }

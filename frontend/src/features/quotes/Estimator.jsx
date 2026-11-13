@@ -1,3 +1,4 @@
+import { kgPerSquareFoot } from './weight.js';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -79,7 +80,7 @@ export default function Estimator() {
     };
   }, []);
 
-  const weightPerSqFt = shutterType === 'manual' ? 2.2 : 2.6;
+  const weightPerSqFt = kgPerSquareFoot(shutterType);
 
   const handleCalculate = (e) => {
     e.preventDefault();
