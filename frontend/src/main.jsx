@@ -10,6 +10,13 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
+const navigation = performance.getEntriesByType('navigation')[0];
+if (navigation?.type === 'reload') {
+  history.scrollRestoration = 'manual';
+  history.replaceState(null, '', '/');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
