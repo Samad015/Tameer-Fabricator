@@ -1,0 +1,53 @@
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: tameer
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD in .env}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "quit(db.adminCommand('ping').ok ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [private]
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 5001
+      MONGO_URI: mongodb://tameer:${MONGO_PASSWORD:?Set MONGO_PASSWORD}@mongo:27017/tameer?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET of at least 32 characters}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      TRUST_PROXY: 1
+      EMAIL_USER: ${EMAIL_USER:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      GEOCODER_URL: ${GEOCODER_URL:-}
+      GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-TameerFabricators/1.0}
+      ALLOW_DEMO_SUBSCRIPTIONS: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [private]
+    security_opt: [no-new-privileges:true]
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports: ["${HTTP_PORT:-8080}:8080"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [private]
+    security_opt: [no-new-privileges:true]
+networks:
+  private:
+volumes:
+  mongo_data:
