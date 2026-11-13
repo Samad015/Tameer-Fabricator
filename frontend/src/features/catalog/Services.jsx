@@ -21,7 +21,7 @@ export default function Services() {
         <div className="grid md:grid-cols-3 gap-8">
           {services.map((item) => (
             <div
-              key={item.id}
+              key={item.id} data-reveal
               className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition duration-300 flex flex-col justify-between shadow-xl"
             >
               <div className="w-full h-60 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 relative flex items-center justify-center p-3">

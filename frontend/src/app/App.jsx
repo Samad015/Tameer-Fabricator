@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './providers/ThemeContext.jsx';
 import { AuthProvider } from '../features/auth/AuthContext.jsx';
 
@@ -26,7 +26,7 @@ import MyWorkshop from '../features/workshop/MyWorkshop.jsx';
 
 function ScrollToAnchor(){
  const {pathname,hash}=useLocation();
- useEffect(()=>{if(hash){const frame=requestAnimationFrame(()=>document.getElementById(hash.slice(1))?.scrollIntoView({behavior:'smooth'}));return ()=>cancelAnimationFrame(frame);}window.scrollTo(0,0);},[pathname,hash]);
+ useEffect(()=>{if(hash){const frame=requestAnimationFrame(()=>document.getElementById(hash.slice(1))?.scrollIntoView());return ()=>cancelAnimationFrame(frame);}window.scrollTo(0,0);},[pathname,hash]);
  return null;
 }
 export default function App() {

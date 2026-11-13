@@ -136,7 +136,7 @@ export default function MyWorkshop() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-950 py-10 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="workshop-panels max-w-4xl mx-auto space-y-6">
 
         {/* Header Card */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">

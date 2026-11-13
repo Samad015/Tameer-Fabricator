@@ -642,7 +642,7 @@ export default function DealerProfile() {
   return (
     <main className="bg-white min-h-screen">
       {/* Hero Header */}
-      <section className="relative h-[360px] sm:h-[420px] overflow-hidden">
+      <section className="dealer-cover relative h-[360px] sm:h-[420px] overflow-hidden">
         <img src={HERO_IMAGE} alt="Fabrication Works" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
         

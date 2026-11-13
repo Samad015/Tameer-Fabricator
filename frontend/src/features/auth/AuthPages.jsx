@@ -142,7 +142,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+      <div className="account-panel w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-white text-center mb-2">Dealer Portal Login</h2>
         <p className="text-center text-slate-400 text-sm mb-8">Access your workshop dashboard & customer leads</p>
 
@@ -339,7 +339,7 @@ export function SignupPage() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+      <div className="account-panel w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-white text-center mb-2">Register Workshop</h2>
         <p className="text-center text-slate-400 text-sm mb-6">Join Tameer Fabricators Network to grow your business</p>
 
@@ -550,7 +550,7 @@ export function VerifyOtp() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+      <div className="account-panel w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-white text-center mb-2">Verify Email</h2>
         <p className="text-center text-slate-400 text-sm mb-6">
           Enter 6-digit verification code sent to <br />
@@ -767,7 +767,7 @@ export function CompleteProfilePage() {
   if (user && !user.isSubscribed) {
     return (
       <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-        <div className="w-full max-w-xl bg-slate-900 border border-amber-500/30 rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
+        <div className="account-panel w-full max-w-xl bg-slate-900 border border-amber-500/30 rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-amber-500 text-slate-950 font-bold text-xs uppercase px-3 py-1 rounded-bl-lg flex items-center gap-1">
             <Sparkles size={14} /> Partner Tier
           </div>
@@ -821,7 +821,7 @@ export function CompleteProfilePage() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-950 p-4 py-12">
-      <div className="w-full max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+      <div className="account-panel w-full max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-white text-center mb-2">Complete Workshop Profile</h2>
         <p className="text-center text-slate-400 text-sm mb-8">Provide your manufacturing details so customers can request precise shutter quotes</p>
 
@@ -1107,7 +1107,7 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-950 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+      <div className="account-panel w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-white text-center mb-2">Reset Password</h2>
         <p className="text-center text-slate-400 text-sm mb-6">
           {step === 1 ? 'Enter your registered email to receive OTP' : `Enter OTP sent to ${email}`}

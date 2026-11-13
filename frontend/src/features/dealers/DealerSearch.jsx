@@ -159,7 +159,7 @@ export default function DealerDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {dealers.map((dealer) => (
               <div 
-                key={dealer._id} 
+                key={dealer._id} data-reveal
                 className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between hover:border-amber-500/50 transition duration-300 relative group"
               >
                 <div>
