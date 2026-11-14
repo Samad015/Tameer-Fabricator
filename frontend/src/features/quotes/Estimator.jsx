@@ -1,5 +1,7 @@
+import { useEstimate } from './useEstimate.js';
+import { apiFetch } from '../../shared/api.js';
 import { kgPerSquareFoot } from './weight.js';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calculator,
@@ -20,12 +22,12 @@ import {
 export default function Estimator() {
   const navigate = useNavigate();
   const DEFAULT_PRICE_PER_KG = 95; 
-  const INCHES_TO_FEET = 1 / 12;
+
 
   const [shutterType, setShutterType] = useState('manual');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
-  const [result, setResult] = useState(null);
+
 
   const [currentPricePerKg, setCurrentPricePerKg] = useState(DEFAULT_PRICE_PER_KG);
   const [dealerInfo, setDealerInfo] = useState(null);
@@ -34,21 +36,33 @@ export default function Estimator() {
 
   const [unit, setUnit] = useState('feet');
   const [showUnitPopup, setShowUnitPopup] = useState(false);
+  const {result,setResult,calculating,calculationError,calculateEstimate} = useEstimate({width,height,unit,shutterType,rate:currentPricePerKg});
 
   const getApiBaseUrl = () => (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
+  const rateRequest = useRef(null);
+
   const fetchDealerRate = async () => {
+    rateRequest.current?.abort();
+    const controller = new AbortController();
+    rateRequest.current = controller;
+    setResult(null);
+    setCurrentPricePerKg(DEFAULT_PRICE_PER_KG);
+    setDealerInfo(null);
     const selectedLocation = localStorage.getItem('userCity') || localStorage.getItem('userLocationName')?.split(',')[0] || 'Bareilly';
 
     setIsLoadingRate(true);
     try {
       const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/dealers/search?location=${encodeURIComponent(selectedLocation)}`);
+      const response = await apiFetch(`${baseUrl}/api/dealers/search?location=${encodeURIComponent(selectedLocation)}`, { signal: controller.signal });
       const data = await response.json();
+      if (controller.signal.aborted) return;
+      if (!response.ok || !data.success) throw new Error(data.message || "Pricing unavailable");
+      setRateSourceMessage(`Indicative rate for ${selectedLocation}`);
 
       if (data.success && data.dealers && data.dealers.length > 0) {
-        const activeDealer = data.dealers[0];
-        if (activeDealer.perKgPrice) {
+        const activeDealer = data.dealers.slice(0,5).find(dealer => Number.isFinite(Number(dealer.perKgPrice)) && Number(dealer.perKgPrice) > 0);
+        if (Number.isFinite(Number(activeDealer?.perKgPrice)) && Number(activeDealer?.perKgPrice) > 0) {
           setCurrentPricePerKg(activeDealer.perKgPrice);
           setDealerInfo(activeDealer);
           setRateSourceMessage(`Live Rate from ${activeDealer.companyName || activeDealer.name} (${activeDealer.area || activeDealer.city}) - ₹${activeDealer.perKgPrice}/kg`);
@@ -59,12 +73,13 @@ export default function Estimator() {
         setRateSourceMessage(`Indicative rate for ${selectedLocation}`);
       }
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error('Error fetching dealer pricing:', error);
       setCurrentPricePerKg(DEFAULT_PRICE_PER_KG);
       setDealerInfo(null);
       setRateSourceMessage('Indicative price — local pricing is unavailable');
     } finally {
-      setIsLoadingRate(false);
+      if (!controller.signal.aborted) setIsLoadingRate(false);
     }
   };
 
@@ -75,6 +90,7 @@ export default function Estimator() {
     window.addEventListener('storage', fetchDealerRate);
 
     return () => {
+      rateRequest.current?.abort();
       window.removeEventListener('cityChanged', fetchDealerRate);
       window.removeEventListener('storage', fetchDealerRate);
     };
@@ -82,28 +98,7 @@ export default function Estimator() {
 
   const weightPerSqFt = kgPerSquareFoot(shutterType);
 
-  const handleCalculate = (e) => {
-    e.preventDefault();
-    let w = parseFloat(width) || 0;
-    let h = parseFloat(height) || 0;
-
-    if (unit === 'inches') {
-      w = w * INCHES_TO_FEET;
-      h = h * INCHES_TO_FEET;
-    }
-
-    const area = w * h;
-    const weight = area * weightPerSqFt;
-    const price = weight * currentPricePerKg;
-
-    setResult({
-      type: shutterType === 'manual' ? 'Manual Shutter' : shutterType === 'gear' ? 'Gear Shutter' : 'Motorized Shutter',
-      totalSqFt: area,
-      totalWeight: weight,
-      estimatedPrice: price,
-      appliedRate: currentPricePerKg,
-    });
-  };
+  const handleCalculate = calculateEstimate;
 
   // Navigate to the matched local dealer's profile page.
   // If no dealer was found for the customer's location, send them
@@ -244,9 +239,11 @@ export default function Estimator() {
                 <input 
                   type="number" 
                   step="any"
+                  min="0.01"
+                  max="10000"
                   required
                   value={width} 
-                  onChange={(e) => setWidth(e.target.value)}
+                  onChange={(e) => { setWidth(e.target.value); setResult(null); }}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 font-bold"
                   placeholder="Enter width"
                 />
@@ -259,9 +256,11 @@ export default function Estimator() {
                 <input 
                   type="number" 
                   step="any"
+                  min="0.01"
+                  max="10000"
                   required
                   value={height} 
-                  onChange={(e) => setHeight(e.target.value)}
+                  onChange={(e) => { setHeight(e.target.value); setResult(null); }}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 font-bold"
                   placeholder="Enter height"
                 />
@@ -298,10 +297,12 @@ export default function Estimator() {
 
             <button 
               type="submit"
+              disabled={isLoadingRate || calculating}
               className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl transition text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 mt-4 cursor-pointer"
             >
-              <RefreshCw size={18} /> Calculate Estimate
+              <RefreshCw size={18} /> {calculating ? 'Calculating…' : 'Calculate Estimate'}
             </button>
+            {calculationError && <p role="alert" className="text-red-700 text-sm">{calculationError}</p>}
           </form>
 
           {/* Price & Specifications Output Display */}
@@ -331,7 +332,7 @@ export default function Estimator() {
 
                 <div>
                   <span className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-widest block mb-1 font-semibold">
-                    Actual Shutter Price
+                    Estimated Shutter Price
                   </span>
                   <div className="text-3xl sm:text-4xl font-black text-amber-600 dark:text-amber-500 flex items-center justify-center gap-1">
                     <IndianRupee size={28} />
@@ -342,7 +343,7 @@ export default function Estimator() {
                       })}
                     </span>
                   </div>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">*Included GST & installation charges basic rate</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">*Confirm GST and installation charges with your fabricator.</span>
                 </div>
 
                 <button
@@ -356,7 +357,7 @@ export default function Estimator() {
             ) : (
               <div className="my-auto py-10 text-slate-500 text-sm space-y-2">
                 <Calculator className="mx-auto text-slate-400 dark:text-slate-600 mb-2" size={40} />
-                <p>Select shutter type, enter dimensions, and click <strong>"Calculate Estimate"</strong> to view exact weight & price.</p>
+                <p>Select shutter type, enter dimensions, and click <strong>"Calculate Estimate"</strong> to view approximate weight & price.</p>
               </div>
             )}
           </div>
@@ -383,7 +384,7 @@ export default function Estimator() {
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
                 <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/40">
-                  <td className="p-3 font-semibold text-slate-900 dark:text-white">Actual Shutter Price</td>
+                  <td className="p-3 font-semibold text-slate-900 dark:text-white">Estimated Shutter Price</td>
                   <td className="p-3 text-slate-500 dark:text-slate-400">Weight × Rate</td>
                   <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
                     ₹{shutterCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -416,7 +417,7 @@ export default function Estimator() {
                   <td className="p-3 text-amber-600 dark:text-amber-500">Final Rate / Total Estimate</td>
                   <td className="p-3 text-amber-600/80 dark:text-amber-500/80 text-xs font-normal">Calculated Total</td>
                   <td className="p-3 text-right font-mono text-amber-600 dark:text-amber-400 font-extrabold">
-                    ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {result ? `₹${finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                   </td>
                 </tr>
               </tbody>

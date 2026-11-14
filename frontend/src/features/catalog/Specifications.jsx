@@ -3,7 +3,7 @@ import { Layers } from 'lucide-react';
 
 export default function Specifications() {
   const specsData = [
-    { name: 'GI Sheet Strip', material: 'Galvanized Iron', dimension: 'Custom Strip Width', thickness: '0.08 mm (Ultra-Thin Foil)', weight: '~0.63 g/m²', application: 'Precision Shims / Insulation Wrapping' },
+    { name: 'GI Sheet Strip', material: 'Galvanized Iron', dimension: 'Custom Strip Width', thickness: '0.08 mm (Ultra-Thin Foil)', weight: '~0.63 kg/m²', application: 'Precision Shims / Insulation Wrapping' },
     { name: '10 Gauge MS Flat', material: 'Mild Steel', dimension: '6 in (152.4 mm) Width', thickness: '10 Gauge (~3.42 mm / 0.135")', weight: '~4.09 kg/m (~1.25 kg/ft)', application: 'Heavy Duty Base Plates / Structural Support' },
     { name: '10 Gauge MS Pipe', material: 'Mild Steel', dimension: '1.5 in (38.1 mm) NB/OD', thickness: '10 Gauge (~3.42 mm / 0.135")', weight: '~2.93 kg/m (~0.89 kg/ft)', application: 'Structural Piping / Frame Fabrication' },
     { name: 'MS Flat Bar (32x6)', material: 'Mild Steel', dimension: '32 mm Width', thickness: '6.0 mm Thickness', weight: '~1.51 kg/m (0.46 kg/ft)', application: 'Bracing, Grills, Engineering' },

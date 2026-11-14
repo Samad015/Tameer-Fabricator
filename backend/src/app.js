@@ -26,6 +26,7 @@ app.use('/api/location', require('./routes/locationRoutes'));
 
 app.use('/api/dealers', require('./routes/dealerRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 app.post('/api/notify-click', (req,res) => res.status(202).json({success:true}));
 
 // Serve Static Frontend Files in Production (Render Monorepo or Combined Setup)

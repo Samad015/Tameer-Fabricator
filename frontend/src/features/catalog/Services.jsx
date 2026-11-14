@@ -24,11 +24,15 @@ export default function Services() {
               key={item.id} data-reveal
               className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition duration-300 flex flex-col justify-between shadow-xl"
             >
-              <div className="w-full h-60 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 relative flex items-center justify-center p-3">
+              <div className="w-full aspect-[3/2] bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 relative flex items-center justify-center">
                 <img
                   src={item.image}
-                  alt={item.title}
-                  className="w-full h-full object-contain rounded-lg transition-transform duration-300 hover:scale-105"
+                  alt={`AI-generated illustration of ${item.title.toLowerCase()}`}
+                  loading="lazy"
+                  decoding="async"
+                  width={1200}
+                  height={800}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     if (e.target.nextSibling) {
@@ -65,6 +69,7 @@ export default function Services() {
             </div>
           ))}
         </div>
+        <p className="mt-5 text-xs text-slate-500">AI-generated product visuals. Final appearance and fittings depend on your specifications.</p>
       </div>
     </section>
   );

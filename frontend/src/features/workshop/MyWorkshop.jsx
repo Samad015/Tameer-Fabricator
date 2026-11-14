@@ -1,3 +1,4 @@
+import { apiFetch } from '../../shared/api.js';
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../auth/AuthContext.jsx';
@@ -35,7 +36,7 @@ export default function MyWorkshop() {
     setLeadsError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/my-leads`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/my-leads`, {
         headers: { }
       });
       const data = await response.json();
@@ -85,7 +86,7 @@ export default function MyWorkshop() {
     setSavingPrice(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/update-price`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/update-price`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

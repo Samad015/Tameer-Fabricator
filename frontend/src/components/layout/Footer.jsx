@@ -1,3 +1,4 @@
+import { apiFetch } from '../../shared/api.js';
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Mail, MapPin, ExternalLink, TvMinimalPlay, Clapperboard, MessageCircle } from 'lucide-react';
@@ -14,7 +15,7 @@ export default function Footer() {
 
     const fetchDealer = async () => {
       try {
-        const res = await fetch(`/api/dealers/${dealerId}`);
+        const res = await apiFetch(`/api/dealers/${dealerId}`);
         const data = await res.json();
         if (data.success) {
           setDealer(data.dealer);

@@ -24,7 +24,7 @@ function security(req,res,next) {
   if (req.body) {
     for (const [key,value] of Object.entries(req.body)) {
       if (key !== 'location' && value !== null && typeof value === 'object') return res.status(400).json({success:false,message:'Invalid field type.'});
-      if (typeof value === 'string' && value.length > 5000) return res.status(400).json({success:false,message:'Field exceeds maximum length.'});
+      if (typeof value === 'string' && value.length > (req.path === '/api/chat' && key === 'history' ? 18000 : 5000)) return res.status(400).json({success:false,message:'Field exceeds maximum length.'});
     }
     const location=req.body.location;
     if(location !== undefined && location !== null){

@@ -11,6 +11,7 @@ import Estimator from '../features/quotes/Estimator.jsx';
 import Specifications from '../features/catalog/Specifications.jsx';
 import Contact from '../features/quotes/Contact.jsx';
 import Footer from '../components/layout/Footer.jsx';
+import ChatWidget from '../features/chat/ChatWidget.jsx';
 
 import {
   LoginPage,
@@ -26,7 +27,7 @@ import MyWorkshop from '../features/workshop/MyWorkshop.jsx';
 
 function ScrollToAnchor(){
  const {pathname,hash}=useLocation();
- useEffect(()=>{if(hash){const frame=requestAnimationFrame(()=>document.getElementById(hash.slice(1))?.scrollIntoView());return ()=>cancelAnimationFrame(frame);}window.scrollTo(0,0);},[pathname,hash]);
+ useEffect(()=>{if(hash){const frame=requestAnimationFrame(()=>document.getElementById(hash.slice(1))?.scrollIntoView());return ()=>cancelAnimationFrame(frame);}window.scrollTo({top:0,left:0,behavior:'instant'});},[pathname,hash]);
  return null;
 }
 export default function App() {
@@ -69,6 +70,7 @@ export default function App() {
           </Routes>
 
           <Footer />
+          <ChatWidget />
         </div>
       </AuthProvider>
     </ThemeProvider>

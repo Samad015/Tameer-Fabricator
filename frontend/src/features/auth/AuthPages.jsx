@@ -1,3 +1,4 @@
+import { apiFetch } from '../../shared/api.js';
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext.jsx';
@@ -107,7 +108,7 @@ export function LoginPage() {
       const phoneNumber = loginValue.replace(/[\s-]/g, '');
       const isPhone = /^[+]?[0-9]{10,13}$/.test(phoneNumber);
 
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
@@ -296,7 +297,7 @@ export function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/register`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -525,7 +526,7 @@ export function VerifyOtp() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail, otp: otp.trim() })
@@ -641,7 +642,7 @@ export function CompleteProfilePage() {
     const timer = setTimeout(async () => {
       setIsSearchingAddress(true);
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${import.meta.env.VITE_GEOCODER_AUTOCOMPLETE_URL}?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=in&addressdetails=1&limit=5`, {signal:controller.signal}
         );
         const data = await response.json();
@@ -680,7 +681,7 @@ export function CompleteProfilePage() {
     setServerError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/subscribe`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -740,7 +741,7 @@ export function CompleteProfilePage() {
     };
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/complete-profile`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/complete-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1038,7 +1039,7 @@ export function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
@@ -1078,7 +1079,7 @@ export function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+      const response = await apiFetch(`${API_BASE}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

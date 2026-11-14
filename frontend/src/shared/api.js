@@ -1,14 +1,14 @@
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-const nativeFetch = window.fetch.bind(window);
-window.fetch = (input, options = {}) => {
-  const raw = typeof input === 'string' ? input : input.url;
-  const url = new URL(raw, window.location.origin);
+export function apiFetch(input, options = {}) {
+  const {timeoutMs = 15000, ...fetchOptions} = options;
+  const url = new URL(input, window.location.origin);
   const apiOrigin = new URL(API_BASE || window.location.origin, window.location.origin).origin;
-  if (url.origin === apiOrigin && url.pathname.startsWith('/api/')) {
-    const headers = new Headers(options.headers);
-    headers.delete('Authorization');
-    return nativeFetch(input, {...options, headers, credentials:'include'});
+  if (url.pathname.startsWith('/api/') && (url.origin === window.location.origin || url.origin === apiOrigin)) {
+    const target = API_BASE ? new URL(url.pathname + url.search, new URL(API_BASE + '/', window.location.origin)) : url;
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+    return window.fetch(target, {...fetchOptions, signal, credentials: 'include'});
   }
-  return nativeFetch(input, options);
-};
+  return window.fetch(input, fetchOptions);
+}
 localStorage.removeItem('token');

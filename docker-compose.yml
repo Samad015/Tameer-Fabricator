@@ -32,6 +32,8 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       GEOCODER_URL: ${GEOCODER_URL:-}
       GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-TameerFabricators/1.0}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       ALLOW_DEMO_SUBSCRIPTIONS: "false"
     depends_on:
       mongo:

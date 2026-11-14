@@ -1,4 +1,4 @@
-import './shared/api.js';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -10,12 +10,8 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-const navigation = performance.getEntriesByType('navigation')[0];
-if (navigation?.type === 'reload') {
-  history.scrollRestoration = 'manual';
-  history.replaceState(null, '', '/');
-  window.scrollTo({ top: 0, behavior: 'instant' });
-}
+// Prevent browser restoration from reopening the homepage halfway down after reload.
+if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

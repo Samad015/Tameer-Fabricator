@@ -342,6 +342,13 @@ exports.completeProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
+    const textFields = ['companyName', 'businessName', 'businessType', 'category', 'address', 'landmark', 'area', 'city', 'state', 'pincode', 'pricingDetails', 'pricingHighlight', 'servicesOffered', 'services', 'gstin', 'pan', 'udyamNumber'];
+    for (const field of textFields) {
+      if (req.body[field] !== undefined && typeof req.body[field] !== 'string') {
+        return res.status(400).json({success:false, field, message:'Please enter text for this field.'});
+      }
+    }
+
     // Validate pincode when provided
     if (pincode && !/^\d{6}$/.test(String(pincode).trim())) {
       return res.status(400).json({ success: false, field: 'pincode', message: 'Pincode must be 6 digits.' });
@@ -365,16 +372,16 @@ exports.completeProfile = async (req, res) => {
     }
 
     // Update Profile Fields with Frontend Alias Fallbacks
-    user.companyName = companyName || businessName || user.companyName || user.name;
+    user.companyName = (companyName || businessName || user.companyName || user.name).trim();
     user.businessType = businessType || user.businessType;
     user.category = category || user.category;
     user.experienceYears = experienceYears ? String(experienceYears) : user.experienceYears;
-    user.address = address || user.address;
+    user.address = (address ?? user.address)?.trim();
     user.landmark = landmark || user.landmark;
     user.area = area || user.area;
-    user.city = city || user.city;
+    user.city = (city ?? user.city)?.trim();
     user.state = state || user.state || 'Uttar Pradesh';
-    user.pincode = pincode || user.pincode;
+    user.pincode = (pincode ?? user.pincode)?.trim();
     user.perKgPrice = perKgPrice ? Number(perKgPrice) : user.perKgPrice;
     user.pricingDetails = pricingDetails || pricingHighlight || user.pricingDetails;
     user.servicesOffered = servicesOffered || services || user.servicesOffered;

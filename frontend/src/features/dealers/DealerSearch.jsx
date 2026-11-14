@@ -1,3 +1,4 @@
+import { apiFetch } from '../../shared/api.js';
 import {detectLocation,saveLocation} from '../../shared/location.js';
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -13,7 +14,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 // navigation - failures are silently ignored here.
 const notifyDealerClick = (dealerId, dealerName, actionType) => {
   if (!dealerId) return;
-  fetch(`${API_BASE}/api/notify-click`, {
+  apiFetch(`${API_BASE}/api/notify-click`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ dealerId, dealerName, actionType })
@@ -68,7 +69,7 @@ export default function DealerDashboard() {
         ? `${API_BASE}/api/dealers/search?location=${encodeURIComponent(query)}`
         : `${API_BASE}/api/dealers/search`;
 
-      const res = await fetch(endpoint,{signal:controller.signal});
+      const res = await apiFetch(endpoint,{signal:controller.signal});
       const data = await res.json();
       
       if (res.ok && data.success && Array.isArray(data.dealers)) {
@@ -112,13 +113,13 @@ export default function DealerDashboard() {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 mb-8 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="w-full md:w-1/2">
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <MapPin className="text-amber-500 shrink-0" /> Verified Shutter Dealers
+              <MapPin className="text-amber-500 shrink-0" /> Shutter Dealers
             </h1>
             <p className="text-sm text-slate-400 mt-1">
               {searchTerm ? (
                 <span>Showing active fabricators in or near: <strong className="text-amber-400">{searchTerm}</strong></span>
               ) : (
-                <span>Browse all verified & active fabricator workshops across regions.</span>
+                <span>Browse active fabricator workshops across regions.</span>
               )}
             </p>
           </div>
@@ -166,7 +167,7 @@ export default function DealerDashboard() {
                   {/* Badges Bar */}
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <span className="bg-amber-500/10 text-amber-400 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/20 flex items-center gap-1">
-                      <UserCheck size={14} /> Active Verified Dealer
+                      <UserCheck size={14} /> Active Dealer
                     </span>
 
                     {dealer.gstin && (

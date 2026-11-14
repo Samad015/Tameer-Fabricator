@@ -8,7 +8,7 @@ export default function Navbar(){
  const location=useLocation();
  useEffect(()=>setOpen(false),[location.pathname]);
  return <header className="site-header">
-  <Link to="/" className="wordmark" aria-label="Tameer Fabricators home">Tameer<span>FABRICATORS · BAREILLY</span></Link>
+  <Link to="/" onClick={()=>{setOpen(false);window.scrollTo({top:0,left:0,behavior:'instant'});}} className="wordmark" aria-label="Tameer Fabricators home">Tameer<span>FABRICATORS · BAREILLY</span></Link>
   <button className="mobile-toggle" aria-label={open?'Close navigation':'Open navigation'} aria-expanded={open} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button>
   <nav aria-label="Main navigation" className={`main-navigation ${open?'is-open':''}`}>
    <Link to="/#services" onClick={()=>setOpen(false)}>Our shutters</Link>

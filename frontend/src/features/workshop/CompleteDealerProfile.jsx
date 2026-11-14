@@ -1,3 +1,4 @@
+import { apiFetch } from '../../shared/api.js';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, MapPin, Search, Loader2, IndianRupee, FileText, User } from 'lucide-react';
@@ -43,7 +44,7 @@ export default function DetailsDealerPage() {
     const timer = setTimeout(async () => {
       setIsSearchingAddress(true);
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${import.meta.env.VITE_GEOCODER_AUTOCOMPLETE_URL}?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=in&addressdetails=1&limit=5`, {signal:controller.signal}
         );
         const data = await response.json();
@@ -84,7 +85,7 @@ export default function DetailsDealerPage() {
 
     setLoading(true);
     try {
-        const response = await fetch('/api/auth/complete-profile', {
+        const response = await apiFetch('/api/auth/complete-profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

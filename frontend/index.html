@@ -5,16 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tameer Fabricators</title>
     <script>
-  (function () {
-    const savedTheme = localStorage.getItem("theme") || "dark";
-
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  })();
-</script>
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+    </script>
   </head>
   <body>
     <div id="root"></div>

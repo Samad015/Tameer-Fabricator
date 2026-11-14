@@ -78,3 +78,17 @@ The security regression suite uses temporary HTTP listeners and mocked database 
 - Lead and dealer listings are capped at 100. Add pagination before larger datasets need it.
 - Inquiry email is best-effort after MongoDB persistence. Add a durable queue and retry monitoring if guaranteed notification delivery is required.
 - Browser visual QA could not complete because the browser tool returned a session ownership error. Check mobile/desktop pages and contrast before release. No live MongoDB, email delivery, payment or container deployment was verified in this environment.
+
+## Gemini website assistant
+
+The floating “Chat with us” button opens a React chat panel. Set `GEMINI_API_KEY` in `backend/.env` (or the backend host's secret environment settings) and restart the backend. Never put this key in a `VITE_` variable or the frontend. `GEMINI_MODEL` defaults to `gemini-3.5-flash-lite`; override it with a function-calling model available to your Google project. Docker Compose reads these settings from the root `.env`.
+
+The backend calls Gemini's `generateContent` API with server-executed functions, bounded history, request timeouts and per-IP limits. Messages and the limited conversation context are sent to Google only when a visitor sends a message. Conversations are kept in React memory, not saved to MongoDB. The shared price calculator works without an AI key. Both on-page calculators and chat use `backend/src/chat/calculator.js` through `/api/chat/estimate` and tool calls respectively.
+
+RAG currently uses local lexical retrieval over curated public site excerpts in `backend/src/chat/knowledge.js`, including Hindi search terms. This is a small reviewed knowledge base, not a vector database, automatic PDF ingestion, web browsing or a live metal-price feed. Update it when approved product or business facts change. No warranty, delivery promise or precise manufacturing weight is invented. Numerical quotations use existing indicative factors and charges; local rates come only from public listed dealers, falling back explicitly to ₹95/kg when unavailable. State searches show matching workshops rather than claiming a state-wide commodity rate.
+
+Inquiry drafts transfer to the existing contact form after the customer clicks “Review inquiry in contact form”. Name and phone stay in that form; the chatbot cannot submit leads, send messages, take payments or access private accounts. The customer must review and submit the inquiry themselves.
+
+Validation: `npm test --prefix backend` includes deterministic calculator, retrieval, directory fallback, inquiry draft, request-validation and mocked Gemini tool-loop coverage. A live provider response requires your configured key and model access. Set Google project quotas/budgets and shared gateway limits before scaling beyond a single backend process.
+
+Gemini integration reference: https://ai.google.dev/api/generate-content

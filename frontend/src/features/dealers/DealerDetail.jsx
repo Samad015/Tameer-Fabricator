@@ -1,3 +1,6 @@
+import { useEstimate } from '../quotes/useEstimate.js';
+import { kgPerSquareFoot } from '../quotes/weight.js';
+import { apiFetch } from '../../shared/api.js';
 import {readLocation} from '../../shared/location.js';
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
@@ -15,7 +18,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 // actual tel:/wa.me navigation - failures are silently ignored here.
 const notifyDealerClick = (dealerId, dealerName, actionType) => {
   if (!dealerId) return;
-  fetch(`${API_BASE}/api/notify-click`, {
+  apiFetch(`${API_BASE}/api/notify-click`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ dealerId, dealerName, actionType })
@@ -25,43 +28,24 @@ const notifyDealerClick = (dealerId, dealerName, actionType) => {
 function Estimator({ dealerRate = 95 }) {
   // Dynamic or fallback rate per kg
   const PRICE_PER_KG = Number(dealerRate) || 95;
-  const INCHES_TO_FEET = 1 / 12;
+
 
   // State Management
   const [shutterType, setShutterType] = useState('manual'); // 'manual', 'gear', 'motorized'
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
-  const [result, setResult] = useState(null);
+
 
   // Unit Selection State (Feet / Inches)
   const [unit, setUnit] = useState('feet');
   const [showUnitPopup, setShowUnitPopup] = useState(false);
+  const {result,setResult,calculating,calculationError,calculateEstimate} = useEstimate({width,height,unit,shutterType,rate:PRICE_PER_KG});
 
   // Dynamic Density Based on Selected Shutter Type
-  const weightPerSqFt = shutterType === 'manual' ? 2.2 : shutterType === 'gear' ? 2.6 : 3.0;
+  const weightPerSqFt = kgPerSquareFoot(shutterType);
 
-  const handleCalculate = (e) => {
-    e.preventDefault();
-    let w = parseFloat(width) || 0;
-    let h = parseFloat(height) || 0;
 
-    // Convert entered dimensions to feet if unit selected is inches
-    if (unit === 'inches') {
-      w = w * INCHES_TO_FEET;
-      h = h * INCHES_TO_FEET;
-    }
-
-    const area = w * h;
-    const weight = area * weightPerSqFt;
-    const price = weight * PRICE_PER_KG;
-
-    setResult({
-      type: shutterType === 'manual' ? 'Manual Shutter' : shutterType === 'gear' ? 'Gear Shutter' : 'Motorized Shutter',
-      totalSqFt: area,
-      totalWeight: weight,
-      estimatedPrice: price,
-    });
-  };
+  const handleCalculate = calculateEstimate;
 
   // Calculations for Summary Table
   const shutterCost = result ? result.estimatedPrice : 0;
@@ -179,9 +163,11 @@ function Estimator({ dealerRate = 95 }) {
                 <input 
                   type="number" 
                   step="any"
+                  min="0.01"
+                  max="10000"
                   required
                   value={width} 
-                  onChange={(e) => setWidth(e.target.value)}
+                  onChange={(e) => { setWidth(e.target.value); setResult(null); }}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-amber-500 font-bold text-sm"
                   placeholder={`Width in ${unit}`}
                 />
@@ -194,9 +180,11 @@ function Estimator({ dealerRate = 95 }) {
                 <input 
                   type="number" 
                   step="any"
+                  min="0.01"
+                  max="10000"
                   required
                   value={height} 
-                  onChange={(e) => setHeight(e.target.value)}
+                  onChange={(e) => { setHeight(e.target.value); setResult(null); }}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-amber-500 font-bold text-sm"
                   placeholder={`Height in ${unit}`}
                 />
@@ -233,11 +221,12 @@ function Estimator({ dealerRate = 95 }) {
             </div>
 
             <button 
-              type="submit"
+              type="submit" disabled={calculating}
               className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl transition text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg mt-4 cursor-pointer"
             >
-              <RefreshCw size={18} /> Calculate Estimate
+              <RefreshCw size={18} /> {calculating ? 'Calculating…' : 'Calculate Estimate'}
             </button>
+            {calculationError && <p role="alert" className="text-red-700 text-sm">{calculationError}</p>}
           </form>
 
           {/* Results Display */}
@@ -265,7 +254,7 @@ function Estimator({ dealerRate = 95 }) {
 
                 <div>
                   <span className="text-slate-500 text-xs uppercase tracking-widest block mb-1 font-semibold">
-                    Actual Shutter Price
+                    Estimated Shutter Price
                   </span>
                   <div className="text-3xl font-black text-amber-600 flex items-center justify-center gap-1">
                     <IndianRupee size={24} />
@@ -284,7 +273,7 @@ function Estimator({ dealerRate = 95 }) {
             ) : (
               <div className="my-auto py-10 text-slate-400 text-sm space-y-2">
                 <Calculator className="mx-auto text-slate-300 mb-2" size={40} />
-                <p>Select shutter type, enter dimensions, and click <strong>"Calculate Estimate"</strong> to view exact weight & price.</p>
+                <p>Select shutter type, enter dimensions, and click <strong>"Calculate Estimate"</strong> to view approximate weight & price.</p>
               </div>
             )}
           </div>
@@ -311,7 +300,7 @@ function Estimator({ dealerRate = 95 }) {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 <tr className="hover:bg-white">
-                  <td className="p-3 font-semibold text-slate-900">Actual Shutter Price</td>
+                  <td className="p-3 font-semibold text-slate-900">Estimated Shutter Price</td>
                   <td className="p-3 text-slate-500">Weight × ₹{PRICE_PER_KG}/kg</td>
                   <td className="p-3 text-right font-mono font-bold text-amber-600">
                     ₹{shutterCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -344,7 +333,7 @@ function Estimator({ dealerRate = 95 }) {
                   <td className="p-3 text-amber-600">Estimated Total</td>
                   <td className="p-3 text-amber-600/70 text-xs font-normal">Calculated Total</td>
                   <td className="p-3 text-right font-mono text-amber-600 font-extrabold">
-                    ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {result ? `₹${finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                   </td>
                 </tr>
               </tbody>
@@ -372,6 +361,7 @@ function ContactForm({ dealerId, dealerName = "", dealerEmail = "" }) {
   const [loading, setLoading] = useState(false);
   const [showShutterPopup, setShowShutterPopup] = useState(false);
   const [showUnitPopup, setShowUnitPopup] = useState(false);
+  const {result,setResult,calculating,calculationError,calculateEstimate} = useEstimate({width,height,unit,shutterType,rate:PRICE_PER_KG});
 
   const handleChange = (e) => {
     setFormData({
@@ -403,7 +393,7 @@ function ContactForm({ dealerId, dealerName = "", dealerEmail = "" }) {
     setStatus({ type: null, message: "" });
 
     try {
-      const response = await fetch(`${API_BASE}/api/contact`, {
+      const response = await apiFetch(`${API_BASE}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -600,7 +590,7 @@ export default function DealerProfile() {
   useEffect(() => {
     const fetchDealerProfile = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/dealers/${dealerId}`);
+        const res = await apiFetch(`${API_BASE}/api/dealers/${dealerId}`);
         const data = await res.json();
         if (data.success) {
           setDealer(data.dealer);
@@ -648,7 +638,7 @@ export default function DealerProfile() {
         
         <div className="relative h-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-between py-8">
           <span className="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-400 text-xs font-semibold px-3 py-1 rounded-full border border-amber-500/30 w-fit backdrop-blur-md">
-            <UserCheck size={14} /> Subscribed & Verified Partner
+            <UserCheck size={14} /> Subscribed Partner
           </span>
 
           <div className="flex items-center gap-4">

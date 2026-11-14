@@ -1,3 +1,4 @@
+import { apiFetch } from '../../shared/api.js';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, IndianRupee, CheckCircle2, ArrowRight } from 'lucide-react';
@@ -31,7 +32,7 @@ export default function SubscriptionSuccessPage() {
 
     try {
       // 1. Create order on backend
-      const orderRes = await fetch('/api/payment/create-subscription-order', {
+      const orderRes = await apiFetch('/api/payment/create-subscription-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -54,7 +55,7 @@ export default function SubscriptionSuccessPage() {
         order_id: orderData.order.id,
         handler: async function (response) {
           // 3. Verify payment on backend
-          const verifyRes = await fetch('/api/payment/verify-subscription-payment', {
+          const verifyRes = await apiFetch('/api/payment/verify-subscription-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
