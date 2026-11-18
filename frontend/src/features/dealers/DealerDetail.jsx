@@ -361,7 +361,6 @@ function ContactForm({ dealerId, dealerName = "", dealerEmail = "" }) {
   const [loading, setLoading] = useState(false);
   const [showShutterPopup, setShowShutterPopup] = useState(false);
   const [showUnitPopup, setShowUnitPopup] = useState(false);
-  const {result,setResult,calculating,calculationError,calculateEstimate} = useEstimate({width,height,unit,shutterType,rate:PRICE_PER_KG});
 
   const handleChange = (e) => {
     setFormData({
